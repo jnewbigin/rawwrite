@@ -2,9 +2,10 @@ unit Native;
 
 interface
 
-uses Windows, WinIOCTL;
+uses Windows, WinIOCTL, classes;
 
 const
+
   OBJ_INHERIT =            $00000002;
   OBJ_PERMANENT =          $00000010;
   OBJ_EXCLUSIVE =          $00000020;
@@ -12,6 +13,9 @@ const
   OBJ_OPENIF =             $00000080;
   OBJ_OPENLINK =           $00000100;
   OBJ_VALID_ATTRIBUTES =   $000001F2;
+
+
+  DIRECTORY_QUERY =        $0001;
 
   /////////////////////////////
 
@@ -127,6 +131,7 @@ type
 
   NTSTATUS = LONG;
   PHANDLE = ^THANDLE;
+  HANDLE = THANDLE;
 
   PVOID = POINTER;
 
@@ -154,6 +159,14 @@ type
    end;
    PIO_STATUS_BLOCK =^IO_STATUS_BLOCK;
 
+   OBJDIR_INFORMATION = record
+    ObjectName : UNICODE_STRING;
+    ObjectTypeName : UNICODE_STRING ; // e.g. Directory, Device ...
+    Data : array of Char;        // variable length
+   end;
+   POBJDIR_INFORMATION = ^OBJDIR_INFORMATION;
+
+
    NtOpenFile_t = function(
 				{OUT} FileHandle : PHANDLE;
 				{IN} DesiredAccess : ACCESS_MASK;
@@ -180,11 +193,31 @@ type
 		{IN OUT} DestinationString : PUNICODE_STRING;
 		{IN} SourceString : PWCHAR) : NTSTATUS; stdcall;
 
+   NtOpenDirectoryObject_t = function(
+		{OUT} DirObjHandle : PHANDLE;
+		{IN} DesiredAccess : ACCESS_MASK;
+		{IN} ObjectAttributes : POBJECT_ATTRIBUTES ) : NTSTATUS; stdcall;
+
+
+
+   NtQueryDirectoryObject_t = function(
+		{IN} DirObjHandle : HANDLE;
+		{OUT} DirObjInformation : POBJDIR_INFORMATION;
+		{IN} BufferLength : ULONG; // size of info buffer
+		{IN} GetNextIndex : BOOLEAN;
+		{IN} IgnoreInputIndex : BOOLEAN;
+		{IN OUT} ObjectIndex : PULONG;
+		{OUT} DataWritten : PULONG) : NTSTATUS ; stdcall; // DataWritten can be NULL
+
+   function NativeDir(Dir : WideString; List : TStringList) : Boolean;
+
 var
    NtOpenFile : NtOpenFile_t;
    NtReadFile : NtReadFile_t;
    RtlInitUnicodeString : RtlInitUnicodeString_t;
    RtlNtStatusToDosError : RtlNtStatusToDosError_t;
+   NtOpenDirectoryObject : NtOpenDirectoryObject_t;
+   NtQueryDirectoryObject : NtQueryDirectoryObject_t;
 
 threadvar
    GetLastError : DWORD;
@@ -202,7 +235,7 @@ function NTReadFile2(hFile: THandle; Buffer : Pointer; nNumberOfBytesToRead: DWO
 
 implementation
 
-uses Dialogs, SysUtils;
+uses Dialogs, SysUtils, debug;
 
 var
    SetupComplete : Boolean;
@@ -255,6 +288,22 @@ begin
    if not Assigned(RtlInitUnicodeString) then
    begin
       MessageDlg('Could not find RtlInitUnicodeString entry point in NTDLL.DLL', mtError, [mbOK], 0);
+      exit;
+   end;
+
+   NtOpenDirectoryObject := NtOpenDirectoryObject_t(GetProcAddress( module_handle, 'NtOpenDirectoryObject' ));
+
+   if not Assigned(NtOpenDirectoryObject) then
+   begin
+      MessageDlg('Could not find NtOpenDirectoryObject entry point in NTDLL.DLL', mtError, [mbOK], 0);
+      exit;
+   end;
+
+   NtQueryDirectoryObject := NtQueryDirectoryObject_t(GetProcAddress( module_handle, 'NtQueryDirectoryObject' ));
+
+   if not Assigned(NtQueryDirectoryObject) then
+   begin
+      MessageDlg('Could not find NtQueryDirectoryObject entry point in NTDLL.DLL', mtError, [mbOK], 0);
       exit;
    end;
 
@@ -365,6 +414,80 @@ begin
    end;
 end;
 
+function NativeDir(Dir : WideString; List : TStringList) : Boolean;
+var
+   UName             : UNICODE_STRING;
+   ObjectAttributes  : OBJECT_ATTRIBUTES;
+   Status            : NTSTATUS;
+   hObject           : HANDLE;
+   index             : ULONG;
+   Data              : WideString;
+   DirObjInformation : POBJDIR_INFORMATION;
+   dw                : ULONG;
+
+
+begin
+   Result := True;
+   
+   Setup;
+
+   RtlInitUnicodeString(@UName, PWideChar(Dir));
+
+   InitializeObjectAttributes (
+						@ObjectAttributes,
+						@UName,
+						OBJ_CASE_INSENSITIVE,
+						0,
+						nil);
+
+   Status := NtOpenDirectoryObject(
+						@hObject,
+						STANDARD_RIGHTS_READ or DIRECTORY_QUERY,
+						@ObjectAttributes);
+
+   if(NT_SUCCESS(Status)) then
+   begin
+	   index := 0; // start index
+
+		while true do
+      begin
+         SetLength(Data, 1024);
+         ZeroMemory(PChar(Data), Length(Data));
+			DirObjInformation := POBJDIR_INFORMATION(PChar(Data));
+			Status := NtQueryDirectoryObject(
+							hObject,
+							DirObjInformation,
+							Length(Data),
+							TRUE,         // get next index
+							FALSE,        // don't ignore index input
+							@index,
+							@dw);         // can be NULL
+
+			if(NT_SUCCESS(Status)) then
+         begin
+            if Assigned(List) then
+            begin
+               List.Add(DirObjInformation.ObjectName.Buffer);
+            end;
+         end
+			else if not NT_SUCCESS(Status) then
+			begin
+//				printf("NtQueryDirectoryObject = 0x%lX (%S)\n", ntStatus, pszDir);
+            Result := False;
+            break;
+			end
+   end;
+
+   //NtClose(hObj);
+   CloseHandle(hObject);
+   end
+   else
+	begin
+{			printf("NtOpenDirectoryObject = 0x%lX (%S)\n", ntStatus,
+				  pszDir);}
+      Result := False;
+  	end
+end;
 
 
 initialization
