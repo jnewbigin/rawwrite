@@ -49,7 +49,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=test.img
+RunParams=
 HostApplication=
 [Version Info]
 IncludeVerInfo=1

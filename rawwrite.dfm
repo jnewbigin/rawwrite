@@ -472,7 +472,7 @@ object MainForm: TMainForm
   object SaveDialog1: TSaveDialog
     Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
     FilterIndex = 2
-    Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 320
     Top = 80
   end
@@ -480,7 +480,7 @@ object MainForm: TMainForm
     ApplicationName = 'rawwrite'
     URL = 'http://itig.it.swin.edu.au/autoupdate.php'
     Version = '0.5'
-    VersionNumber = 1
+    VersionNumber = 2
     Left = 288
     Top = 40
   end

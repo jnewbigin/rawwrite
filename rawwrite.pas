@@ -131,7 +131,7 @@ var
    CmdRead : Boolean;
    CmdCopies : Integer;
    CmdImage : String;
-   CmdDrive : String;
+   CmdDrive : Integer;
    i : Integer;
 begin
    // Prevent error messages being displayed by NT
@@ -175,6 +175,17 @@ begin
       MessageDlg('No Floppy drives found', mtInformation, [mbOK], 0);
    end;
 
+   if OSis95 then
+   begin
+      if not FileExists('diskio.dll') then
+      begin
+         if MessageDlg('You seem to be missing diskio.dll.  RawWrite can automaticly download it for you.  Do you want to download it now?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+         begin
+            AutoUpdate1.GetFile('diskio.dll');
+         end;
+      end;
+   end;
+
    PageControl1.ActivePage := TabSheet1;
 
    if ParamCount > 0 then
@@ -182,6 +193,7 @@ begin
       CommandLine := True;
       CmdRead := False;
       CmdCopies := 1;
+      CmdDrive := 0;
 
       i := 1;
       while i <= ParamCount do
@@ -205,7 +217,7 @@ begin
          else if ParamStr(i) = '--drive' then
          begin
             Inc(i);
-            CmdDrive := ParamStr(i);
+            CmdDrive := StrToIntDef(ParamStr(i), 0);
             Inc(i);
          end
          else
@@ -225,12 +237,13 @@ begin
       end;
       // check command line parameters
       // [--write] [--copies n] [--drive \\.\a:] file.img
-      // --read [--drive \\.\a:] file.img
+      // --read [--drive 0|1|...] file.img
       if CmdRead then
       begin
          try
             // do a command line read
             ReadFileNameEdit.Text := CmdImage;
+            DriveComboBox.ItemIndex := CmdDrive;
             ReadButtonClick(ReadButton);
          except
             on E : Exception do
@@ -246,6 +259,7 @@ begin
          try
             WriteCopyEdit.Text := IntToStr(CmdCopies);
             FileNameEdit.Text := CmdImage;
+            DriveComboBox.ItemIndex := CmdDrive;
             WriteButtonClick(WriteButton);
          except
             on E : Exception do
@@ -639,7 +653,7 @@ begin
 ''#13#10+
 'This program is a replacement for the traditional command'#13#10+
 'line rawrite.  This version works under Windows NT 4, and'#13#10+
-'derived version like Windows 2000 and Windows XP.  It'#13#10+
+'derived versions like Windows 2000 and Windows XP.  It'#13#10+
 'also works under Windows 95 and derived versions like'#13#10+
 'Windows 98 and Windows ME.'#13#10+
 ''#13#10+
@@ -679,15 +693,21 @@ end;
 
 procedure TMainForm.TabSheet5Show(Sender: TObject);
 begin
-   Memo2.Text := 
+   Memo2.Text :=
 'Command Line Parameters'#13#10+
 '======================='#13#10+
 'This version supports command line parameters.'#13#10+
+''#13#10+
 'To write an image, the command is'#13#10+
-'rawwritewin [--write] [--copies n] [--drive \\.\a:] file.img'#13#10+
+'rawwritewin [--write] [--copies n] [--drive driveno] file.img'#13#10+
+''#13#10+
 'To read an image, the command is'#13#10+
-'rawwritewin --read [--drive \\.\a:] file.img'#13#10+
+'rawwritewin --read [--drive driveno] file.img'#13#10+
 'If file.img already exists it will be overwritten'#13#10+
+''#13#10+
+'driveno is the index of the drive as shown when rawwritewin'#13#10+
+'is run interactivly.  The default is 0 which is the first drive'#13#10+
+'listed'#13#10+
 '';
 
 end;
