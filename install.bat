@@ -39,5 +39,6 @@ rem Set up the autoupgrade
 echo Copying to uranus
 copy rawwritewin.exe \\uranus\itig\autoupgrade\rawwrite\rawwritewin.exe
 echo %AUTO_VERSION_NO% > \\uranus\itig\autoupgrade\rawwrite\VERSION
+copy ..\autoupdate\autohelp.exe \\uranus\itig\autoupgrade\rawwrite\autohelp.exe
 
 pause
