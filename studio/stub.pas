@@ -143,6 +143,11 @@ begin
    end;
 
    DriveComboBox.Items.Add('Save as file...');
+   if DriveComboBox.Items.Count = 1 then
+   begin
+      // this is the only option
+      DriveComboBox.ItemIndex := 0;
+   end;
    
 end;
 
@@ -150,6 +155,11 @@ function TStubForm.OnProgress(Progress : Int64; Error : DWORD) : Boolean;
 begin
    StatusBar1.Panels[0].Text := IntToStr((Progress * 100) div ProgressSize) + '%';
 //   IntToStr(Progress) + ' of ' + IntToStr(ProgressSize);
+   if Error > 0 then
+   begin
+      MessageDlg(SysErrorMessage(Error), mtError, [mbOK], 0);
+   end;
+
    Application.ProcessMessages;
    if CancelButton.Tag > 0 then
    begin
@@ -196,10 +206,17 @@ begin
       end
       else
       begin
-         OpenDirectory1.Execute;
-         Dir := OpenDirectory1.Directory + '\';
-         if not DirectoryExists(Dir) then
+         if OpenDirectory1.Execute then
          begin
+            Dir := OpenDirectory1.Directory + '\';
+            if not DirectoryExists(Dir) then
+            begin
+               exit;
+            end;
+         end
+         else
+         begin
+            // cancel...
             exit;
          end;
       end;
@@ -244,6 +261,13 @@ begin
       if Count = 0 then
       begin
          MessageDlg('Please select at least one disk to write', mtError, [mbOK], 0);
+      end
+      else
+      begin
+         if not UsingFloppy then
+         begin
+            MessageDlg(IntToStr(Count) + ' image file(s) extraced to ' + Dir, mtInformation, [mbOK], 0);
+         end;
       end;
    finally
       WriteButton.Visible := True;
@@ -267,9 +291,15 @@ end;
 
 procedure TStubForm.DriveComboBoxDrawItem(Control: TWinControl;
   Index: Integer; Rect: TRect; State: TOwnerDrawState);
+var
+   SaveColor : TColor;
 begin
    with Control as TComboBox do
    begin
+      SaveColor := Canvas.Brush.Color;
+      Canvas.Brush.Color := clWindow;
+      Canvas.FillRect(Rect);
+      Canvas.Brush.Color := SaveColor;
       if Index < Items.Count - 1 then
       begin
          // draw the icon
@@ -287,8 +317,7 @@ begin
    end
    else
    begin
-//      FindNTFloppy;
-      Find95Floppy;
+      FindNTFloppy;
    end;
 end;
 

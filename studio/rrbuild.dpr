@@ -4,7 +4,6 @@ program rrbuild;
 
 uses
   SysUtils,
-  debug,
   ZLib in '..\Zlib.pas',
   studio_tools in 'studio_tools.pas',
   Native in '..\Native.pas',
@@ -13,7 +12,8 @@ uses
   QTThunkU in '..\QTThunkU.pas',
   unitPEFile in 'resourceutils\unitPEFile.pas',
   unitResourceDetails in 'resourceutils\unitResourceDetails.pas',
-  md5 in 'md5\md5.pas';
+  md5 in 'md5\md5.pas',
+  debug in 'debug.pas';
 
 var
    i : Integer;

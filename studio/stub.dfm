@@ -1,9 +1,10 @@
 object StubForm: TStubForm
-  Left = 508
-  Top = 191
-  Width = 283
-  Height = 333
+  Left = 525
+  Top = 224
+  BorderStyle = bsDialog
   Caption = 'Write Floppy Disk'
+  ClientHeight = 306
+  ClientWidth = 275
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,6 +12,7 @@ object StubForm: TStubForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
+  Position = poDesktopCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
@@ -130,6 +132,7 @@ object StubForm: TStubForm
     Top = 256
     Width = 75
     Height = 25
+    Cancel = True
     Caption = 'E&xit'
     ModalResult = 2
     TabOrder = 2

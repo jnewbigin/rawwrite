@@ -22,6 +22,8 @@ type
     function SetDisk(Disk : Integer) : Boolean;
     function SetDiskByName(Name : String) : Boolean;
 
+    procedure ExtractResourceToFile(Name : String; FileName : String);
+
     function ReadSector(SectorNo : LongInt; Buffer : Pointer; Count : LongInt) : Boolean;
     function WriteSector(SectorNo : LongInt; Buffer : Pointer; Count : LongInt) : Boolean;
     function SectorCount : LongInt;
@@ -43,13 +45,19 @@ type
   end;
 
 implementation
-uses Forms, sysutils;
+uses Forms, sysutils, windows, winbinfile;
 
 constructor T95Disk.Create;
 var
    Path : String;
 begin
    Path := ExtractFilePath(Application.ExeName) + 'Diskio.DLL';
+
+   if not FileExists(Path) then
+   begin
+      // see if we have it as a resource
+      ExtractResourceToFile('diskio', Path);
+   end;
    //ShowMessage('Loading ' + Path);
    try
       DLLHandle := LoadLib16(Path);
@@ -69,6 +77,53 @@ destructor T95Disk.Destroy;
 begin
    FreeLibrary16(DllHandle);
 end;
+
+procedure T95Disk.ExtractResourceToFile(Name : String; FileName : String);
+var
+   h : THandle;
+   gh : THandle;
+   data : PChar;
+   Res : String;
+   BinFile : TBinaryFile;
+
+begin
+   h := FindResource(0, PChar(Name), 'DLL');
+   if h > 0 then
+   begin
+      gh := LoadResource(0, h);
+      if gh > 0 then
+      begin
+         Data := LockResource(gh);
+         if Data <> nil then
+         begin
+            BinFile := TBinaryFile.Create;
+            try
+               BinFile.Assign(FileName);
+               BinFile.Delete;
+               BinFile.CreateNew;
+
+               BinFile.BlockWrite2(Data, SizeofResource(0, h));
+               BinFile.Close;
+            finally
+               BinFile.Free;
+            end;
+         end
+         else
+         begin
+            // error
+         end;
+      end
+      else
+      begin
+         // error
+      end;
+   end
+   else
+   begin
+      // error
+   end;
+end;
+
 
 function T95Disk.SetDisk(Disk : Integer) : Boolean;
 begin

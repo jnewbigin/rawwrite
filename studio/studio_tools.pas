@@ -9,16 +9,20 @@ type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
 
 function LoadDiskFile(FileName : String) : String;
+procedure SaveDiskFile(FileName : String; Data : String);
 function LoadDiskResource(Name : String) : String;
 function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringList) : Boolean;
 procedure CreateExe(FileName : String);
 procedure ShowError(Action : String);
 procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
+function EndsWith(S : String; Ends : String; var Value : String) : Boolean;
+procedure PrintVolumeGeometry;
 
 implementation
 
-uses zlib, sysutils, debug, native, winbinfile, diskio, unitPEFile, unitResourceDetails, md5;
+uses zlib, sysutils, debug, native, winbinfile, diskio, unitPEFile,
+     unitResourceDetails, md5, dialogs, winioctl;
 
 procedure ShowError(Action : String);
 begin
@@ -36,6 +40,25 @@ begin
 
       SetLength(Result, BinFile.FileSize);
       BinFile.BlockRead2(PChar(Result), BinFile.FileSize);
+   finally
+      BinFile.Free;
+   end;
+end;
+
+procedure SaveDiskFile(FileName : String; Data : String);
+var
+   BinFile : TBinaryFile;
+begin
+   BinFile := TBinaryFile.Create;
+   try
+      BinFile.Assign(FileName);
+      if not BinFile.CreateNew then
+      begin
+         BinFile.Open(OPEN_WRITE_ONLY);
+         BinFile.TruncateTo(0);
+      end;
+
+      BinFile.BlockWrite2(PChar(Data), Length(Data));
    finally
       BinFile.Free;
    end;
@@ -226,6 +249,7 @@ var
    Stub : String;
 begin
    Stub := LoadDiskResource('STUB');
+   Stub := ZDecompressStr(Stub);
    BinFile := TBinaryFile.Create;
    try
       BinFile.Assign(Target);
@@ -239,8 +263,6 @@ begin
    end;
 
 end;
-
-// MD5String
 
 procedure CreateExe(FileName : String);
 var
@@ -333,6 +355,19 @@ begin
    end;
 end;
 
+function EndsWith(S : String; Ends : String; var Value : String) : Boolean;
+begin
+   if Copy(S, Length(S) - Length(Ends) + 1, Length(Ends)) = Ends then
+   begin
+      Result := True;
+      Value := Copy(S, 1, Length(S) - Length(Ends));
+   end
+   else
+   begin
+      Result := False;
+   end;
+end;
+
 procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
 var
    InBinFile   : TBinaryFile;
@@ -340,6 +375,7 @@ var
 
    In95Disk : T95Disk;
    Out95Disk : T95Disk;
+   Out95SectorCount : LongInt;
 
    Value : String;
    h : THandle;
@@ -430,6 +466,7 @@ begin
             Log('read from 95 disk');
             Out95Disk := T95Disk.Create;
             Out95Disk.SetDiskByName(OutFile);
+            Out95SectorCount := 0;
          end
          else
          begin
@@ -478,7 +515,7 @@ begin
             end
             else if Assigned(Out95Disk) then
             begin
-               Out95Disk.SeekSector(Seek div 512);
+               Out95SectorCount := Seek div 512;
             end;
             //Log('seek to ' + IntToStr(OutBinFile.GetPos));
          end;
@@ -510,7 +547,22 @@ begin
 
             // write the output...
             //Log('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
-            Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
+            if assigned(OutBinFile) then
+            begin
+               Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
+            end;
+            if assigned(Out95Disk) then
+            begin
+               if Out95Disk.WriteSector(Out95SectorCount, PChar(Buffer), Actual div 512) then
+               begin
+                  Actual2 := Actual;
+                  Out95SectorCount := Out95SectorCount + (Actual div 512);
+               end
+               else
+               begin
+                  Actual2 := 0;
+               end;
+            end;
             if Actual2 = Actual then
             begin
                // full write
@@ -534,6 +586,13 @@ begin
                if Windows.GetLastError > 0 then
                begin
                   ShowError('writing file');
+                  if Assigned(Callback) then
+                  begin
+                     if Callback(BytesOut, Windows.GetLastError) then
+                     begin
+                        break;
+                     end;
+                  end;
                end;
                break;
             end;
@@ -566,6 +625,158 @@ begin
       end;
    end;
 
+end;
+
+procedure PrintVolumeGeometry;
+var
+   DriveNo    : Integer;
+   PartNo     : Integer;
+   DeviceName : String;
+   Done       : Boolean;
+   ErrorNo    : DWORD;
+   Geometry   : TDISK_GEOMETRY;
+   Len        : DWORD;
+   Description : String;
+
+   function TestDevice(DeviceName : String; var Description : String) : Boolean;
+   var
+      h : THandle;
+   begin
+      Result := False;
+      Description := '';
+
+//      h := NTCreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+      h := CreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
+
+      if h <> INVALID_HANDLE_VALUE then
+      begin
+         try
+            //Log('Opened ' + DeviceName);
+            Result := True;
+
+            // get the geometry...
+            if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
+            begin
+               //Log('Block size = ' + IntToStr(Geometry.BytesPerSector));
+               //Log('Media type = ' + MediaDescription(Geometry.MediaType));
+               Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
+            end
+            else
+            begin
+               //ShowError('reading geometry');
+            end;
+         finally
+            CloseHandle(h);
+         end;
+      end
+      else
+      begin
+         ErrorNo := Native.GetLastError;
+         if ErrorNo = ERROR_FILE_NOT_FOUND then
+         begin
+            // does not matter
+         end
+         else if ErrorNo = ERROR_PATH_NOT_FOUND then
+         begin
+            // does not matter
+         end
+         else if ErrorNo = 5 then
+         begin
+//               MessageDlg('This program requires Administrator privilages to run', mtError, [mbOK], 0);
+         end
+         else if ErrorNo = ERROR_SHARING_VIOLATION then
+         begin
+            // in use (probably mounted)...
+            Result := True;
+         end
+         else
+         begin
+            ShowError('opening device');
+         end;
+      end;
+   end;
+begin
+{   DriveNo := 0;
+
+   Done := False;
+
+   while not Done do
+   begin
+      PartNo := 0;
+
+      while True do
+      begin
+         DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
+         if TestDevice(DeviceName, Description) then
+         begin
+            Log('\\?' + DeviceName);
+            PartNo := PartNo + 1;
+            if Length(Description) > 0 then
+            begin
+               Log('   ' + Description);
+            end;
+         end
+         else
+         begin
+            if PartNo = 0 then
+            begin
+               Done := True;
+            end;
+            break;
+         end;
+      end;
+      DriveNo := DriveNo + 1;
+   end;
+
+   DriveNo := 0;
+   while True do
+   begin
+      DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
+      if TestDevice(DeviceName, Description) then
+      begin
+         Log('\\?' + DeviceName);
+         DriveNo := DriveNo + 1;
+         if Length(Description) > 0 then
+         begin
+            Log('   ' + Description);
+         end;
+      end
+      else
+      begin
+         break;
+      end;
+   end;
+
+   DriveNo := 0;
+   while True do
+   begin
+      DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
+      if TestDevice(DeviceName, Description) then
+      begin
+         Log('\\?' + DeviceName);
+         DriveNo := DriveNo + 1;
+         if Length(Description) > 0 then
+         begin
+            Log('   ' + Description);
+         end;
+      end
+      else
+      begin
+         break;
+      end;
+   end;}
+
+   DeviceName := '\\.\Volume{63e0fec2-8788-11d6-9224-806d6172696f}';
+
+      if TestDevice(DeviceName, Description) then
+      begin
+         Log('\\?' + DeviceName);
+         if Length(Description) > 0 then
+         begin
+            Log('   ' + Description);
+         end;
+
+   end;
 end;
 
 
