@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 322
-  Top = 281
+  Left = 399
+  Top = 255
   BorderStyle = bsSingle
   Caption = 'RawWrite'
   ClientHeight = 349
@@ -224,6 +224,9 @@ object MainForm: TMainForm
         Width = 50
       end
       item
+        Width = 75
+      end
+      item
         Text = 'Version'
         Width = 50
       end>
@@ -253,7 +256,7 @@ object MainForm: TMainForm
     Top = 88
     Width = 329
     Height = 193
-    ActivePage = TabSheet1
+    ActivePage = TabSheet3
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Write'
@@ -299,21 +302,9 @@ object MainForm: TMainForm
         Top = 80
         Width = 217
         Height = 77
-        Lines.Strings = (
-          'DebugMemo')
         ScrollBars = ssVertical
         TabOrder = 2
         Visible = False
-      end
-      object WriteButton: TButton
-        Left = 238
-        Top = 100
-        Width = 75
-        Height = 25
-        Caption = '&Old Write'
-        TabOrder = 3
-        Visible = False
-        OnClick = WriteButtonClick
       end
       object Button2: TButton
         Left = 238
@@ -321,7 +312,7 @@ object MainForm: TMainForm
         Width = 75
         Height = 25
         Caption = '&Write'
-        TabOrder = 4
+        TabOrder = 3
         OnClick = Button2Click
       end
       object WriteCopyEdit: TEdit
@@ -329,7 +320,7 @@ object MainForm: TMainForm
         Top = 56
         Width = 49
         Height = 21
-        TabOrder = 5
+        TabOrder = 4
         Text = '1'
       end
       object UpDown1: TUpDown
@@ -340,7 +331,7 @@ object MainForm: TMainForm
         Associate = WriteCopyEdit
         Min = 1
         Position = 1
-        TabOrder = 6
+        TabOrder = 5
         Wrap = False
       end
     end
@@ -362,14 +353,14 @@ object MainForm: TMainForm
         Caption = 'Use this tab to read an image file from a floppy disk'
       end
       object ReadFileNameEdit: TEdit
-        Left = 80
+        Left = 104
         Top = 32
         Width = 169
         Height = 21
         TabOrder = 0
       end
       object Button4: TButton
-        Left = 256
+        Left = 280
         Top = 32
         Width = 17
         Height = 21
@@ -390,6 +381,7 @@ object MainForm: TMainForm
     object TabSheet4: TTabSheet
       Caption = 'Advanced'
       ImageIndex = 3
+      TabVisible = False
       object Label10: TLabel
         Left = 16
         Top = 8
@@ -401,6 +393,7 @@ object MainForm: TMainForm
     object TabSheet3: TTabSheet
       Caption = 'About'
       ImageIndex = 2
+      OnShow = TabSheet3Show
       object Memo1: TMemo
         Left = 8
         Top = 8
@@ -412,13 +405,15 @@ object MainForm: TMainForm
     end
   end
   object OpenDialog1: TOpenDialog
-    Filter = 'All files (*.*)|*.*'
+    Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
+    FilterIndex = 2
     Options = [ofFileMustExist]
     Left = 200
     Top = 80
   end
   object SaveDialog1: TSaveDialog
-    Filter = 'All files (*.*)|*.*'
+    Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
+    FilterIndex = 2
     Options = [ofOverwritePrompt, ofHideReadOnly, ofEnableSizing]
     Left = 240
     Top = 80

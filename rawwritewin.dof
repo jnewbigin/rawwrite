@@ -2,7 +2,7 @@
 A=1
 B=0
 C=0
-D=1
+D=0
 E=0
 F=0
 G=1
@@ -10,7 +10,7 @@ H=1
 I=1
 J=1
 K=0
-L=1
+L=0
 M=0
 N=1
 O=1
@@ -26,7 +26,7 @@ X=1
 Y=0
 Z=1
 ShowHints=0
-ShowWarnings=0
+ShowWarnings=1
 UnitAliases=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [Linker]
 MapFile=0
@@ -49,17 +49,17 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=
+RunParams=--read
 HostApplication=
 [Language]
 ActiveLang=
 ProjectLang=$00000C09
 RootDir=
 [Version Info]
-IncludeVerInfo=0
+IncludeVerInfo=1
 AutoIncBuild=0
-MajorVer=1
-MinorVer=0
+MajorVer=0
+MinorVer=4
 Release=0
 Build=0
 Debug=0
@@ -69,10 +69,10 @@ Private=0
 DLL=0
 Locale=3081
 CodePage=1252
+[Version Info Keys]
+FileVersion=0.4.0.0
 [Excluded Packages]
-$(DELPHI)\Bin\dcldss40.bpl=(Untitled)
-D:\WINNT\System32\\ibevnt40.bpl=(Untitled)
-$(DELPHI)\Bin\dclmid40.bpl=(Untitled)
-$(DELPHI)\Bin\dclnet40.bpl=(Untitled)
-D:\WINNT\System32\\nmfast40.bpl=(Untitled)
-$(DELPHI)\Bin\DBWEBXPRT.BPL=(Untitled)
+$(DELPHI)\Bin\DBWEBXPRT.BPL=Borland Web Wizard Package
+[HistoryLists\hlUnitAliases]
+Count=1
+Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;

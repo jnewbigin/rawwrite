@@ -2,7 +2,7 @@ unit DiskIO;
 
 interface
 
-uses QTThunkU;
+uses QTThunkU, Classes, Dialogs;
 
 type
   {$A-}
@@ -41,8 +41,17 @@ implementation
 
 constructor T95Disk.Create;
 begin
-   DLLHandle := LoadLib16('Diskio.DLL');
-   Ready := False;
+   try
+      DLLHandle := LoadLib16('Diskio.DLL');
+      Ready := False;
+   except
+      on E : EFOpenError do
+      begin
+         MessageDlg('Failed to load diskio.dll.  Please make sure that this file is available (in the same directory as this application)'#10 +
+                    'If you do not have a copy you can download it from http://uranus.it.swin.edu.au/~jn/linux', mtError, [mbCancel], 0);
+         raise;
+      end;
+   end;
 end;
 
 destructor T95Disk.Destroy;

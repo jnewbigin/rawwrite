@@ -267,6 +267,7 @@ var
    WriteLength          : DWORD;
    ActualLengthWritten  : DWORD;
    Seek                 : DWORD;
+   Error                : DWORD;
 begin
    // check for a valid handle
    if h <> INVALID_HANDLE_VALUE then
@@ -284,8 +285,9 @@ begin
          // seek successful, lets read
          if not WriteFile2(h, Buffer, WriteLength, ActualLengthWritten, nil) then
          begin
+            Error := GetLastError;
             Debug('Write failed error=' + IntToStr(GetLastError), DebugOff);
-            raise Exception.Create('Write failed');
+            raise Exception.Create('Write Failed: (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error));
          end
          else if WriteLength <> ActualLengthWritten then
          begin

@@ -29,7 +29,6 @@ type
     Button1: TButton;
     OpenDialog1: TOpenDialog;
     DebugMemo: TMemo;
-    WriteButton: TButton;
     Button2: TButton;
     Label7: TLabel;
     ReadFileNameEdit: TEdit;
@@ -49,22 +48,19 @@ type
     procedure FormCreate(Sender: TObject);
     procedure DriveComboBoxDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
-    procedure WriteButtonClick(Sender: TObject);
     procedure Button2Click(Sender: TObject);
     procedure Label5Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
     procedure Label3DblClick(Sender: TObject);
     procedure Button4Click(Sender: TObject);
     procedure Button5Click(Sender: TObject);
+    procedure TabSheet3Show(Sender: TObject);
   private
     { Private declarations }
     OSis95 : Boolean;
 
     procedure Find95Floppy;
     procedure FindNTFloppy;
-
-    procedure Write95Floppy;
-    procedure WriteNTFloppy;
 
   public
     { Public declarations }
@@ -121,6 +117,12 @@ procedure TMainForm.FormCreate(Sender: TObject);
 var
    Version : TOSVersionInfo;
    VersionString : String;
+   CommandLine : Boolean;
+   CmdRead : Boolean;
+   CmdCopies : Integer;
+   CmdImage : String;
+   CmdDrive : String;
+   i : Integer;
 begin
    // Prevent error messages being displayed by NT
    SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -139,7 +141,7 @@ begin
       VersionString := VersionString + ' ' + IntToStr(Version.dwMajorVersion) +
                                        '.' + IntToStr(Version.dwMinorVersion) +
                                        ' build number ' + IntToStr(Version.dwBuildNumber);
-      StatusBar1.Panels[1].Text := VersionString;
+      StatusBar1.Panels[2].Text := VersionString;
       if Version.dwPlatformId = VER_PLATFORM_WIN32_WINDOWS then
       begin
          OSis95 := True;
@@ -162,6 +164,64 @@ begin
    begin
       MessageDlg('No Floppy drives found', mtInformation, [mbOK], 0);
    end;
+
+   PageControl1.ActivePage := TabSheet1;
+{
+   if ParamCount > 0 then
+   begin
+      CommandLine := True;
+      CmdRead := False;
+      CmdCopies := 1;
+
+      i := 1;
+      while i <= ParamCount do
+      begin
+         if ParamStr(i) = '--read' then
+         begin
+            Inc(i);
+            CmdRead := True;
+         end
+         else if ParamStr(i) = '--write' then
+         begin
+            Inc(i);
+            CmdRead := False;
+         end
+         else if ParamStr(i) = '--write' then
+         begin
+            Inc(i);
+            CmdCopies := StrToIntDef(ParamStr(i), 1);
+            Inc(i);
+         end
+         else if ParamStr(i) = '--drive' then
+         begin
+            Inc(i);
+            CmdDrive := ParamStr(i);
+            Inc(i);
+         end
+         else
+         begin
+            if Pos('--', ParamStr(i)) = 1 then
+            begin
+               // unknown command
+               MessageDlg('Unknown command line option ''' + ParamStr(i) + '''', mtError, [mbOK], 0);
+               break;
+            end
+            else
+            begin
+               CmdImage := ParamStr(i);
+               break;
+            end;
+         end;
+      end;
+      // check command line parameters
+      // [--write] [--copies n] [--drive \\.\a:] file.img
+      // --read [--drive \\.\a:] file.img
+   end
+   else
+   begin
+      CommandLine := False;
+   end;
+   }
 end;
 
 procedure TMainForm.FindFloppy;
@@ -188,6 +248,7 @@ var
    Drive : Char;
    h : THandle;
    FileName : String;
+   Error : DWORD;
 begin
    for Drive := 'A' to 'B' do
    begin
@@ -197,8 +258,20 @@ begin
       begin
          DriveComboBox.Items.Add(FileName);
          CloseHandle(h);
+      end
+      else
+      begin
+         Error := GetLastError;
+         if Error = 21 then
+         begin
+            DriveComboBox.Items.Add(FileName);
+         end
+         else
+         begin
+            Debug(FileName, DebugLow);
+            Debug(IntToStr(GetLastError) + #10 + SysErrorMessage(Error), DebugLow);
+         end;
       end;
-
    end;
 end;
 
@@ -210,120 +283,6 @@ begin
       // draw the icon
       Canvas.Draw(Rect.Left + 2, Rect.Top + 3, FloppyImage.Picture.Graphic);
       Canvas.TextOut(Rect.Left + 20, Rect.Top, Items[Index]);
-   end;
-end;
-
-procedure TMainForm.WriteButtonClick(Sender: TObject);
-begin
-   if OSis95 then
-   begin
-      Write95Floppy;
-   end
-   else
-   begin
-      WriteNTFloppy;
-   end;
-end;
-
-procedure TMainForm.Write95Floppy;
-var
-   h1       : THandle;
-   Disk     : T95Disk;
-   Buffer   : String;
-   Read     : DWORD;
-   Written  : DWORD;
-   Blocks   : Integer;
-   WrittenBlocks : Integer;
-begin
-   // make sure that the file exists...
-   h1 := CreateFile(PChar(FileNameEdit.Text), GENERIC_READ, 0, nil, OPEN_EXISTING, 0, 0);
-   if h1 <> INVALID_HANDLE_VALUE then
-   try
-      Blocks := GetFileSize(h1, nil) div 512;
-      WrittenBlocks := 0;
-      // open the drive
-      Disk := T95Disk.Create;
-      if DriveComboBox.ItemIndex >= 0 then
-      begin
-         Disk.SetDisk(DriveComboBox.ItemIndex);
-
-         // write away...
-         SetLength(Buffer, 4096);
-         while true do
-         begin
-            ReadFile2(h1, PChar(Buffer), 4096, Read, nil);
-            if Read = 0 then break;
-            if not Disk.WriteSector(WrittenBlocks, PChar(Buffer), 8) then
-            begin
-               MessageDlg('Error writing to disk!', mtError, [mbOK], 0);
-               break;
-            end;
-            Inc(WrittenBlocks, 8);
-            StatusBar1.Panels[0].Text := IntToStr((WrittenBlocks * 100) div Blocks) + '%';
-            StatusBar1.Refresh;
-         end;
-      end
-      else
-      begin
-         MessageDlg('Please select a drive!', mtError, [mbOK], 0);
-      end;
-   finally
-      CloseHandle(h1);
-   end
-   else
-   begin
-      MessageDlg('Error: ' + SysErrorMessage(Error) + '(' + IntToStr(GetLastError) + ')', mtError, [mbOK], 0);
-   end;
-end;
-
-procedure TMainForm.WriteNTFloppy;
-var
-   h1       : THandle;
-   h2       : THandle;
-   Buffer   : String;
-   Read     : DWORD;
-   Written  : DWORD;
-   Blocks   : Integer;
-   WrittenBlocks : Integer;
-begin
-   // make sure that the file exists...
-   h1 := CreateFile(PChar(FileNameEdit.Text), GENERIC_READ, 0, nil, OPEN_EXISTING, 0, 0);
-   if h1 <> INVALID_HANDLE_VALUE then
-   try
-      Blocks := GetFileSize(h1, nil) div 512;
-      WrittenBlocks := 0;
-      // open the drive
-      h2 := CreateFile(PChar(DriveComboBox.Text), GENERIC_WRITE, 0, nil, OPEN_EXISTING, 0, 0);
-      if h2 <> INVALID_HANDLE_VALUE then
-      try
-         // write away...
-         SetLength(Buffer, 512);
-         while true do
-         begin
-            ReadFile2(h1, PChar(Buffer), 512, Read, nil);
-            if Read = 0 then break;
-            if not WriteFile2(h2, PChar(Buffer), 512, Written, nil) then
-            begin
-               MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
-               break;
-            end;
-            Inc(WrittenBlocks);
-            StatusBar1.Panels[0].Text := IntToStr((WrittenBlocks * 100) div Blocks) + '%';
-            StatusBar1.Refresh;
-         end;
-      finally
-         CloseHandle(h2);
-      end
-      else
-      begin
-         MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
-      end;
-   finally
-      CloseHandle(h1);
-   end
-   else
-   begin
-      MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
    end;
 end;
 
@@ -344,6 +303,9 @@ var
    Device   : TBlockDevice;
    Zero     : _Large_Integer;
    DiskSize : _Large_Integer;
+   HadError : Boolean;
+   DiskNumber : Integer;
+   Error : DWORD;
 begin
    if DriveComboBox.ItemIndex < 0 then
    begin
@@ -351,12 +313,17 @@ begin
       exit;
    end;
 
+   HadError := False;
+
    Wait;
    try
       CopiesRemaining := UpDown1.Position;
+      DiskNumber := 0;
 
       while CopiesRemaining > 0 do
       begin
+         DiskNumber := DiskNumber + 1;
+         StatusBar1.Panels[1].Text := 'Disk ' + IntToStr(DiskNumber) + ' of ' + IntToStr(UpDown1.Position);
          CopiesRemaining := CopiesRemaining - 1;
          BlocksCount := 64;
 
@@ -393,25 +360,33 @@ begin
 
             if Device.Open then
             try
-               // write away...
-               while WrittenBlocks < Blocks do
-               begin
-                  BlocksRemaining := Blocks - WrittenBlocks;
-                  if BlocksRemaining > BlocksCount then
+               try
+                  // write away...
+                  while WrittenBlocks < Blocks do
                   begin
-                     BlockCount := BlocksCount;
-                  end
-                  else
-                  begin
-                     BlockCount := BlocksRemaining;
-                  end;
+                     BlocksRemaining := Blocks - WrittenBlocks;
+                     if BlocksRemaining > BlocksCount then
+                     begin
+                        BlockCount := BlocksCount;
+                     end
+                     else
+                     begin
+                        BlockCount := BlocksRemaining;
+                     end;
 
-                  ReadFile2(h1, PChar(Buffer), 512 * BlockCount, Read, nil);
-                  if Read = 0 then break;
-                  Device.WritePhysicalSector(WrittenBlocks, BlockCount, PChar(Buffer));
-                  WrittenBlocks := WrittenBlocks + BlockCount;
-                  StatusBar1.Panels[0].Text := IntToStr((WrittenBlocks * 100) div Blocks) + '%';
-                  Application.ProcessMessages;
+                     ReadFile2(h1, PChar(Buffer), 512 * BlockCount, Read, nil);
+                     if Read = 0 then break;
+                     Device.WritePhysicalSector(WrittenBlocks, BlockCount, PChar(Buffer));
+                     WrittenBlocks := WrittenBlocks + BlockCount;
+                     StatusBar1.Panels[0].Text := IntToStr((WrittenBlocks * 100) div Blocks) + '%';
+                     Application.ProcessMessages;
+                  end;
+               except
+                  on E : Exception do
+                  begin
+                     MessageDlg(E.Message, mtError, [mbOK], 0);
+                     HadError := True;
+                  end;
                end;
             finally
                Device.Close;
@@ -419,14 +394,51 @@ begin
             end
             else
             begin
-               MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
+               Error := GetLastError;
+               MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
+               HadError := True;
             end;
          finally
             CloseHandle(h1);
          end
          else
          begin
-            MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
+            Error := GetLastError;
+            MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
+            HadError := True;
+         end;
+
+         if CopiesRemaining > 0 then
+         begin
+            if HadError then
+            begin
+               if MessageDlg('The image was not successfully written.  Do you want to continue with the remaining ' + IntToStr(CopiesRemaining) + ' copies?', mtConfirmation, [mbYes, mbNo], 0) = mrNo then
+               begin
+                  CopiesRemaining := 0;
+               end
+               else
+               begin
+                  HadError := False;
+               end;
+            end
+            else
+            begin
+               if MessageDlg('Image successfully written.  Insert next disk', mtInformation, [mbOK, mbCancel], 0) = mrCancel then
+               begin
+                  CopiesRemaining := 0;
+               end;
+            end;
+         end
+         else
+         begin
+            if HadError then
+            begin
+               MessageDlg('Image was not successfully written.', mtError, [mbOK], 0);
+            end
+            else
+            begin
+               MessageDlg('Image successfully written.', mtInformation, [mbOK], 0);
+            end;
          end;
       end;
    finally
@@ -476,6 +488,7 @@ var
    Device   : TBlockDevice;
    Zero     : _Large_Integer;
    DiskSize : _Large_Integer;
+   Error : DWORD;
 begin
    if DriveComboBox.ItemIndex < 0 then
    begin
@@ -556,18 +569,64 @@ begin
          end
          else
          begin
-            MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
+            Error := GetLastError;
+            MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
          end;
       finally
          CloseHandle(h1);
       end
       else
       begin
-         MessageDlg('Error ' + IntToStr(GetLastError), mtError, [mbOK], 0);
+         Error := GetLastError;
+         MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
       end;
    finally
       UnWait;
    end;
+end;
+
+procedure TMainForm.TabSheet3Show(Sender: TObject);
+begin
+   Memo1.Text :=
+'RawWrite for windows version 0.4'#13#10+
+'Written by John Newbigin'#13#10+
+'Copyright (C) 2000 John Newbigin'#13#10+
+''#13#10+
+'Under 95, this program requires diskio.dll.'#13#10+
+''#13#10+
+'This program is a replacement for the traditional command'#13#10+
+'line rawrite.  This version works under Windows NT 4,'#13#10+
+'Windows 2000, Windows 95, Windows 98 & Windows ME.'#13#10+
+''#13#10+
+'It should be very easy to use, just select the drive you want'#13#10+
+'to use, select the image file and hit read or write.'#13#10+
+''#13#10+
+'This verson supports reading an image from a disk.  Only'#13#10+
+'1.44 disks is supported at this time.  Writing to 1.2 drives'#13#10+
+'might work.'#13#10+
+''#13#10+
+'If your floppy drive is not listed in the combo box, please'#13#10+
+'send me an e-mail and I will try and fix the problem.'#13#10+
+''#13#10+
+'Copyright'#13#10+
+'========='#13#10+
+'This program is free software; you can redistribute it and/or'#13#10+
+'modify it under the terms of the GNU General Public License'#13#10+
+'as published by the Free Software Foundation; either'#13#10+
+'version 2 of the License, or (at your option) any later'#13#10+
+'version.'#13#10+
+''#13#10+
+'This program is distributed in the hope that it will be useful,'#13#10+
+'but WITHOUT ANY WARRANTY; without even the implied'#13#10+
+'warranty of MERCHANTABILITY or FITNESS FOR A'#13#10+
+'PARTICULAR PURPOSE.  See the GNU General Public'#13#10+
+'License for more details.'#13#10+
+''#13#10+
+'You should have received a copy of the GNU General'#13#10+
+'Public License along with this program; if not, write to the'#13#10+
+'Free Software Foundation, Inc., 675 Mass Ave, Cambridge,'#13#10+
+'MA 02139, USA.'
+
 end;
 
 end.
