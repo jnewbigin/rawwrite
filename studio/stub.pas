@@ -330,32 +330,46 @@ end;
 
 procedure TStubForm.FindNTFloppy;
 var
-   Drive : Char;
    h : THandle;
    FileName : String;
    Error : DWORD;
+   Drives : TStringList;
+   i : Integer;
+   DriveType : Integer;
 begin
-   for Drive := 'A' to 'B' do
-   begin
-      FileName := '\\.\' + Drive + ':';
-      h := CreateFile(PChar(FileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
-      if h <> INVALID_HANDLE_VALUE then
+   Drives := TStringList.Create;
+   try
+      GetDriveStrings(Drives);
+
+      for i := 0 to Drives.Count - 1 do
       begin
-         DriveComboBox.Items.Add(FileName);
-         CloseHandle(h);
-      end
-      else
-      begin
-         Error := GetLastError;
-         if Error = 21 then
+         DriveType := Integer(Drives.Objects[i]);
+         if DriveType = DRIVE_REMOVABLE then
          begin
-            DriveComboBox.Items.Add(FileName);
-         end
-         else
-         begin
-            ShowError(FileName);
+            FileName := '\\.\' + Drives[i];
+            EndsWith(FileName, '\', FileName);
+            h := CreateFile(PChar(FileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
+            if h <> INVALID_HANDLE_VALUE then
+            begin
+               DriveComboBox.Items.Add(FileName);
+               CloseHandle(h);
+            end
+            else
+            begin
+               Error := GetLastError;
+               if Error = 21 then
+               begin
+                  DriveComboBox.Items.Add(FileName);
+               end
+               else
+               begin
+                  ShowError(FileName);
+               end;
+            end;
          end;
       end;
+   finally
+      Drives.Free;
    end;
 end;
 

@@ -1,5 +1,7 @@
 program dd;
 {$APPTYPE CONSOLE}
+{%File 'ddchanges.txt'}
+
 uses
   SysUtils,
   Windows,
@@ -9,7 +11,10 @@ uses
   WinBinFile in 'WinBinFile.pas',
   WinIOCTL in 'WinIOCTL.pas',
   studio_tools in 'studio\studio_tools.pas',
-  debug in 'studio\debug.pas';
+  debug in 'studio\debug.pas',
+  unitPEFile in 'studio\resourceutils\unitPEFile.pas',
+  unitResourceDetails in 'studio\resourceutils\unitResourceDetails.pas',
+  md5 in 'studio\md5\md5.pas';
 
 var
    Version : TOSVersionInfo;
@@ -24,6 +29,7 @@ var
    Seek        : Int64;
    Skip        : Int64;
    BlockSize   : Int64;
+   Progress    : Boolean;
 
 //const AppVersion = '0.2';
 {
@@ -45,6 +51,42 @@ var
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 }
 
+type TDDProgress = class
+public
+   BlockSize : Int64;
+   Count     : Int64;
+   function DDProgress(Progress : Int64; Error : DWORD) : Boolean;
+end;
+
+function TDDProgress.DDProgress(Progress : Int64; Error : DWORD) : Boolean;
+var
+   Number : String;
+   S : String;
+   Len : Integer;
+   i : Integer;
+begin
+   Result := False;
+   if Count > 0 then
+   begin
+      // we know how many blocks so we can do a %
+   end
+   else
+   begin
+      Number := IntToStr(Progress);
+      Len := Length(Number);
+      for i := 1 to Len do
+      begin
+         S := S + Number[i];
+         if (i < Len) and ((Len - i) mod 3 = 0) then
+         begin
+            S := S + ',';
+         end;
+      end;
+
+      write(#13 + S);
+   end;
+end;
+
 {procedure Debug(S : String);
 begin
    writeln(S);
@@ -57,7 +99,7 @@ end;}
 
 procedure PrintUsage;
 begin
-   Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list]');
+   Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list] [--progress]');
    Log('SIZE may have one of the following suffix:');
    Log(' k = 1024');
    Log(' M = 1048576');
@@ -117,10 +159,14 @@ end;
 
 procedure PrintNT4BlockDevices;
 var
+   Devices : TStringList;
+   i : Integer;
+   Number : String;
+   Harddisks : TStringList;
+
    DriveNo    : Integer;
    PartNo     : Integer;
    DeviceName : String;
-   Done       : Boolean;
    ErrorNo    : DWORD;
    Geometry   : TDISK_GEOMETRY;
    Len        : DWORD;
@@ -183,76 +229,86 @@ var
       end;
    end;
 begin
-   DriveNo := 0;
+   Devices := TStringList.Create;
+   Devices.Sorted := True;
+   Harddisks := TStringList.Create;
+   Harddisks.Sorted := True;
+   try
 
-   Done := False;
+      NativeDir('\Device', Devices);
 
-   while not Done do
-   begin
-      PartNo := 0;
-
-      while True do
+      for i := 0 to Devices.Count - 1 do
       begin
-         DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
-         if TestDevice(DeviceName, Description) then
+         DeviceName := '';
+
+         if StartsWith(Devices[i], 'CdRom', Number) then
          begin
-            Log('\\?' + DeviceName);
-            PartNo := PartNo + 1;
-            if Length(Description) > 0 then
+            DriveNo := StrToIntDef(Number, -1);
+            if DriveNo >= 0 then
             begin
-               Log('   ' + Description);
+               DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
             end;
          end
-         else
+         else if StartsWith(Devices[i], 'Floppy', Number) then
          begin
-            if PartNo = 0 then
+            DriveNo := StrToIntDef(Number, -1);
+            if DriveNo >= 0 then
             begin
-               Done := True;
+               DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
             end;
-            break;
-         end;
-      end;
-      DriveNo := DriveNo + 1;
-   end;
-
-   DriveNo := 0;
-   while True do
-   begin
-      DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
-      if TestDevice(DeviceName, Description) then
-      begin
-         Log('\\?' + DeviceName);
-         DriveNo := DriveNo + 1;
-         if Length(Description) > 0 then
+         end
+         else if StartsWith(Devices[i], 'Harddisk', Number) then
          begin
-            Log('   ' + Description);
+            DriveNo := StrToIntDef(Number, -1);
+            if DriveNo >= 0 then
+            begin
+               // scan the partitions...
+               Harddisks.Add('\Device\Harddisk' + IntToStr(DriveNo));
+            end;
          end;
-      end
-      else
-      begin
-         break;
-      end;
-   end;
 
-   DriveNo := 0;
-   while True do
-   begin
-      DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
-      if TestDevice(DeviceName, Description) then
-      begin
-         Log('\\?' + DeviceName);
-         DriveNo := DriveNo + 1;
-         if Length(Description) > 0 then
+         if Length(DeviceName) > 0 then
          begin
-            Log('   ' + Description);
+            if TestDevice(DeviceName, Description) then
+            begin
+               Log('\\?' + DeviceName);
+               if Length(Description) > 0 then
+               begin
+                  Log('   ' + Description);
+               end;
+            end
          end;
-      end
-      else
-      begin
-         break;
       end;
-   end;
 
+      // do the hard disk partitions...
+      for DriveNo := 0 to Harddisks.Count - 1 do
+      begin
+         Devices.Clear;
+         NativeDir(Harddisks[DriveNo], Devices);
+         for i := 0 to Devices.Count - 1 do
+         begin
+            if StartsWith(Devices[i], 'Partition', Number) then
+            begin
+               PartNo := StrToIntDef(Number, -1);
+               if PartNo >= 0 then
+               begin
+                  DeviceName := Harddisks[DriveNo] + '\Partition' + IntToStr(PartNo);
+                  if TestDevice(DeviceName, Description) then
+                  begin
+                     Log('\\?' + DeviceName);
+                     if Length(Description) > 0 then
+                     begin
+                        Log('   ' + Description);
+                     end;
+                  end
+               end;
+            end
+         end;
+      end;
+   finally
+      Devices.Free;
+      Harddisks.Free;
+   end;
 end;
 
 
@@ -327,6 +383,8 @@ begin
             begin
                SetLength(VolumeName, strlen(PChar(VolumeName)));
                Log('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
+               Log('  ' + GetDriveTypeDescription(GetDriveType(PChar(VolumeName))));
+
                MountCount := 0;
                // see if this matches a drive letter...
                for Drive := 'a' to 'z' do
@@ -456,6 +514,7 @@ end;
 var
    i : Integer;
    Value : String;
+   ProgressCallback : TDDProgress;
 begin
    UseWriteln;
    Log('rawwrite dd for windows version ' + AppVersion + '.  Written by John Newbigin <jn@it.swin.edu.au>');
@@ -498,6 +557,7 @@ begin
    BlockSize := 512; // ?
    Seek      := 0;
    Skip      := 0;
+   Progress  := False;
    // count=
    // if=
    // of=
@@ -511,6 +571,10 @@ begin
       if ParamStr(i) = '--list' then
       begin
          Action := 'list';
+      end
+      else if ParamStr(i) = '--progress' then
+      begin
+         Progress := True;
       end
       else if StartsWith(ParamStr(i), 'count=', Value) then
       begin
@@ -564,7 +628,18 @@ begin
       Seek  := Seek * Blocksize;
       if BlockSize > 0 then
       begin
-         DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek);
+         if Progress then
+         begin
+            ProgressCallback := TDDProgress.Create;
+            ProgressCallback.BlockSize := BlockSize;
+            ProgressCallback.Count := Count;
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, ProgressCallback.DDProgress);
+            ProgressCallback.Free;
+         end
+         else
+         begin
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, nil);
+         end;
       end;
    end
    else

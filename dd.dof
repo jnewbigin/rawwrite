@@ -49,7 +49,7 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=count=20
+RunParams=--list
 HostApplication=
 [Version Info]
 IncludeVerInfo=0

@@ -13,7 +13,9 @@ uses
   unitPEFile in 'resourceutils\unitPEFile.pas',
   unitResourceDetails in 'resourceutils\unitResourceDetails.pas',
   md5 in 'md5\md5.pas',
-  debug in 'debug.pas';
+  debug in 'debug.pas',
+  WinIOCTL in '..\WinIOCTL.pas',
+  unitResourceRCData in 'resourceutils\unitResourceRCData.pas';
 
 var
    i : Integer;

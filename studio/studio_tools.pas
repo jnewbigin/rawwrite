@@ -17,7 +17,8 @@ procedure ShowError(Action : String);
 procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
 function EndsWith(S : String; Ends : String; var Value : String) : Boolean;
-procedure PrintVolumeGeometry;
+function GetDriveStrings(StringList : TStringList) : Boolean;
+function GetDriveTypeDescription(DriveType : Integer) : String;
 
 implementation
 
@@ -102,92 +103,6 @@ begin
    end;
 end;
 
-// This does not even work... I'll try something else...
-{procedure StrechExe(ExeName : String; size : Integer);
-var
-   h : THandle;
-   s : Integer;
-   BlockSize : Integer;
-   Blocks : Integer;
-   Dummy : String;
-begin
-   Log('Making room...');
-   BlockSize := 1024 * 64;
-   Blocks := Size div BlockSize + 1;
-
-   SetLength(Dummy, BlockSize * Blocks);
-
-   for s := 1 to Blocks do
-   begin
-      h := BeginUpdateResource(PChar(ExeName), False);
-      //Log(IntToStr(s * BlockSize));
-      UpdateResource(h, 'DISK', 'DUMMY', 0, PChar(Dummy), s * BlockSize);
-      EndUpdateResource(h, False);
-   end;
-   h := BeginUpdateResource(PChar(ExeName), False);
-   UpdateResource(h, 'DISK', 'DUMMY', 0, nil, 0);
-   EndUpdateResource(h, False);
-end;}
-
-// Data should already be compressed
-{
-function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringList) : Boolean;
-var
-   h : THandle;
-   i : Integer;
-begin
-   Result := True;
-   h := BeginUpdateResource(PChar(ExeName), False);
-   if h > 0 then
-   begin
-      Log('Begin update for ' + ExeName);
-      for i := 0 to Name.Count - 1 do
-      begin
-         //Log(IntToStr(Length(Data[i])));
-         if UpdateResource(h, 'DISK', PChar(Name[i]), 0, PChar(Data[i]), Length(Data[i])) then
-         begin
-            Log('Updated ' + Name[i]);
-         end
-         else
-         begin
-            ShowError('UpdateResource');
-            Result := False;
-            break;
-         end;
-      end;
-
-      if Result then
-      begin
-         if EndUpdateResource(h, False) then
-         begin
-            Result := True;
-            Log('Finished');
-         end
-         else
-         begin
-            // error
-            ShowError('EndUpdateResource');
-            Result := False;
-         end;
-      end
-      else
-      begin
-         // error
-         if not EndUpdateResource(h, True) then
-         begin
-            ShowError('EndUpdateResource');
-         end;
-         Result := False;
-         Log('Aborted');
-      end;
-   end
-   else
-   begin
-      ShowError('BeginUpdateResource');
-      Result := False;
-   end;
-end;
-}
 
 // This implementation uses ResourceUtils http://www.wilsonc.demon.co.uk/d7resourceutils.htm
 // Data should already be compressed
@@ -202,6 +117,7 @@ begin
 
    PEResourceModule := TPEResourceModule.Create;
    PEResourceModule.LoadFromFile(ExeName);
+
 
    // dump out the current resources...
 
@@ -231,7 +147,6 @@ begin
 
    for i := 0 to Name.Count - 1 do
    begin
-      PEResourceModule.LoadFromFile(ExeName);
       Len := Length(Data[i]);
       Log('Adding resource ' + Name[i] + ' (' + IntToStr(Len) + ')');
       NewResource := TResourceDetails.CreateResourceDetails(PEResourceModule, 0, Name[i], 'DISK', Len, PChar(Data[i]));
@@ -249,7 +164,10 @@ var
    Stub : String;
 begin
    Stub := LoadDiskResource('STUB');
-   Stub := ZDecompressStr(Stub);
+   try
+      Stub := ZDecompressStr(Stub);
+   except
+   end;
    BinFile := TBinaryFile.Create;
    try
       BinFile.Assign(Target);
@@ -550,8 +468,8 @@ begin
             if assigned(OutBinFile) then
             begin
                Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
-            end;
-            if assigned(Out95Disk) then
+            end
+            else if assigned(Out95Disk) then
             begin
                if Out95Disk.WriteSector(Out95SectorCount, PChar(Buffer), Actual div 512) then
                begin
@@ -562,6 +480,11 @@ begin
                begin
                   Actual2 := 0;
                end;
+            end
+            else
+            begin
+               // no device to write to... must be an error
+               Actual2 := 0;
             end;
             if Actual2 = Actual then
             begin
@@ -627,158 +550,60 @@ begin
 
 end;
 
-procedure PrintVolumeGeometry;
+function GetDriveStrings(StringList : TStringList) : Boolean;
 var
-   DriveNo    : Integer;
-   PartNo     : Integer;
-   DeviceName : String;
-   Done       : Boolean;
-   ErrorNo    : DWORD;
-   Geometry   : TDISK_GEOMETRY;
-   Len        : DWORD;
-   Description : String;
-
-   function TestDevice(DeviceName : String; var Description : String) : Boolean;
-   var
-      h : THandle;
-   begin
-      Result := False;
-      Description := '';
-
-//      h := NTCreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
-      h := CreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
-
-      if h <> INVALID_HANDLE_VALUE then
-      begin
-         try
-            //Log('Opened ' + DeviceName);
-            Result := True;
-
-            // get the geometry...
-            if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
-            begin
-               //Log('Block size = ' + IntToStr(Geometry.BytesPerSector));
-               //Log('Media type = ' + MediaDescription(Geometry.MediaType));
-               Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
-            end
-            else
-            begin
-               //ShowError('reading geometry');
-            end;
-         finally
-            CloseHandle(h);
-         end;
-      end
-      else
-      begin
-         ErrorNo := Native.GetLastError;
-         if ErrorNo = ERROR_FILE_NOT_FOUND then
-         begin
-            // does not matter
-         end
-         else if ErrorNo = ERROR_PATH_NOT_FOUND then
-         begin
-            // does not matter
-         end
-         else if ErrorNo = 5 then
-         begin
-//               MessageDlg('This program requires Administrator privilages to run', mtError, [mbOK], 0);
-         end
-         else if ErrorNo = ERROR_SHARING_VIOLATION then
-         begin
-            // in use (probably mounted)...
-            Result := True;
-         end
-         else
-         begin
-            ShowError('opening device');
-         end;
-      end;
-   end;
+   Error : DWORD;
+   Buffer : String;
+   i : DWORD;
+   S : String;
+   DriveType : UINT;
 begin
-{   DriveNo := 0;
-
-   Done := False;
-
-   while not Done do
+   SetLength(Buffer, 4096);
+   Error := GetLogicalDriveStrings(Length(Buffer), PCHAR(Buffer));
+   if Error = 0 then
    begin
-      PartNo := 0;
-
-      while True do
-      begin
-         DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
-         if TestDevice(DeviceName, Description) then
-         begin
-            Log('\\?' + DeviceName);
-            PartNo := PartNo + 1;
-            if Length(Description) > 0 then
-            begin
-               Log('   ' + Description);
-            end;
-         end
-         else
-         begin
-            if PartNo = 0 then
-            begin
-               Done := True;
-            end;
-            break;
-         end;
-      end;
-      DriveNo := DriveNo + 1;
+      Result := false;
+      exit;
    end;
 
-   DriveNo := 0;
-   while True do
+   SetLength(Buffer, Error);
+
+   S := '';
+   i := 1;
+   while i <= Error do
    begin
-      DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
-      if TestDevice(DeviceName, Description) then
+      if Buffer[i] = #0 then
       begin
-         Log('\\?' + DeviceName);
-         DriveNo := DriveNo + 1;
-         if Length(Description) > 0 then
-         begin
-            Log('   ' + Description);
-         end;
+         DriveType := GetDriveType(PCHAR(S));
+         StringList.AddObject(S, TObject(DriveType));
+         S := '';
       end
       else
       begin
-         break;
+         S := S + Buffer[i];
       end;
+      i := i + 1;
    end;
 
-   DriveNo := 0;
-   while True do
-   begin
-      DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
-      if TestDevice(DeviceName, Description) then
-      begin
-         Log('\\?' + DeviceName);
-         DriveNo := DriveNo + 1;
-         if Length(Description) > 0 then
-         begin
-            Log('   ' + Description);
-         end;
-      end
-      else
-      begin
-         break;
-      end;
-   end;}
+   Result := True;
 
-   DeviceName := '\\.\Volume{63e0fec2-8788-11d6-9224-806d6172696f}';
-
-      if TestDevice(DeviceName, Description) then
-      begin
-         Log('\\?' + DeviceName);
-         if Length(Description) > 0 then
-         begin
-            Log('   ' + Description);
-         end;
-
-   end;
 end;
 
+// Pass in the drive type as returned by GetDriveStrings or GetDriveType
+function GetDriveTypeDescription(DriveType : Integer) : String;
+begin
+   case DriveType of
+      DRIVE_UNKNOWN:       Result := 'drive type cannot be determined';
+      DRIVE_NO_ROOT_DIR:   Result := 'no volume mounted';
+      DRIVE_REMOVABLE:     Result := 'removeable media';
+      DRIVE_FIXED:         Result := 'fixed media';
+      DRIVE_REMOTE:        Result := 'network drive';
+      DRIVE_CDROM:         Result := 'CD-ROM';
+      DRIVE_RAMDISK:       Result := 'RAM disk';
+   else
+      Result := 'Unknown';
+   end;
+end;
 
 {
    boot.img,x86 boot disk,For CD install where booting from CD is not supported,TRUE

@@ -83,7 +83,6 @@ var
    h : THandle;
    gh : THandle;
    data : PChar;
-   Res : String;
    BinFile : TBinaryFile;
 
 begin
