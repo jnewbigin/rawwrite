@@ -463,7 +463,7 @@ object MainForm: TMainForm
     end
   end
   object OpenDialog1: TOpenDialog
-    Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
+    Filter = 'All files (*.*)|*.*|Image files (*.img;*.flp)|*.img;*.flp'
     FilterIndex = 2
     Options = [ofFileMustExist]
     Left = 288
