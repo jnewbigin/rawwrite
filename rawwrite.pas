@@ -381,7 +381,7 @@ begin
          BlocksCount := 64;
 
          // make sure that the file exists...
-         h1 := CreateFile(PChar(FileNameEdit.Text), GENERIC_READ, 0, nil, OPEN_EXISTING, 0, 0);
+         h1 := CreateFile(PChar(FileNameEdit.Text), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
          if h1 <> INVALID_HANDLE_VALUE then
          try
             FileSize := GetFileSize(h1, nil);
@@ -458,7 +458,7 @@ begin
             else
             begin
                Error := GetLastError;
-               MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
+               MessageDlg('Error ' + IntToStr(GetLastError) + ' opening floppy device'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
                HadError := True;
             end;
          finally
@@ -467,7 +467,7 @@ begin
          else
          begin
             Error := GetLastError;
-            MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
+            MessageDlg('Error ' + IntToStr(GetLastError) + ' opening image file ''' + FileNameEdit.Text + ''''#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
             HadError := True;
          end;
 

@@ -479,8 +479,8 @@ object MainForm: TMainForm
   object AutoUpdate1: TAutoUpdate
     ApplicationName = 'rawwrite'
     URL = 'http://itig.it.swin.edu.au/autoupdate.php'
-    Version = '0.6'
-    VersionNumber = 6
+    Version = '0.7'
+    VersionNumber = 7
     Left = 296
     Top = 40
   end
