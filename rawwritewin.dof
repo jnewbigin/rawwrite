@@ -43,7 +43,7 @@ OutputDir=
 UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=
+SearchPath=D:\users2\jn\working\autoupdate\component
 Packages=Vcl40;Vclx40;Vcldb40;vcldbx40;VclSmp40;Qrpt40;TeeUI40;teedb40;tee40;dragdrop;ex2fs;test
 Conditionals=
 DebugSourceDirs=
@@ -76,8 +76,22 @@ OriginalFilename=
 ProductName=
 ProductVersion=1.0.0.0
 [Excluded Packages]
-$(DELPHI)\Bin\DBWEBXPRT.BPL=Borland Web Wizard Package
+$(DELPHI)\Bin\CorIde50.bpl=Borland Core IDE Package
+$(DELPHI)\Bin\VCLIDE50.bpl=Integrated Development Environment Specific Components
+$(DELPHI)\Bin\direct50.bpl=Borland Direct IDE Package
+$(DELPHI)\Bin\stride50.bpl=String Resource Editor IDE Package
+$(DELPHI)\Bin\proide50.bpl=Borland Core IDE Package
+$(DELPHI)\Bin\dphpro50.bpl=Borland Delphi Professional IDE Package
+$(DELPHI)\Bin\dphcrb50.bpl=Borland Delphi Core IDE CORBA Package
+$(DELPHI)\Bin\crbide50.bpl=Borland Core IDE CORBA Package
+$(DELPHI)\Bin\dphmts50.bpl=Borland Delphi Core MTS IDE Package
+$(DELPHI)\Bin\mtside50.bpl=Borland Core MTS IDE Package
+$(DELPHI)\Bin\DbX50.bpl=(untitled)
 $(DELPHI)\Bin\dclite50.bpl=Borland Integrated Translation Environment
+$(DELPHI)\Bin\rcpkg50.bpl=(untitled)
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
+[HistoryLists\hlSearchPath]
+Count=1
+Item0=D:\users2\jn\working\autoupdate\component

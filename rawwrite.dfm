@@ -241,7 +241,7 @@ object MainForm: TMainForm
     Top = 88
     Width = 329
     Height = 193
-    ActivePage = TabSheet2
+    ActivePage = TabSheet1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Write'
@@ -480,7 +480,7 @@ object MainForm: TMainForm
     ApplicationName = 'rawwrite'
     URL = 'http://itig.it.swin.edu.au/autoupdate.php'
     Version = '0.6'
-    VersionNumber = 3
+    VersionNumber = 6
     Left = 296
     Top = 40
   end
