@@ -1,5 +1,5 @@
 unit WinBinFile;
-// $Header: /home/itig/cvsroot/rawwrite/WinBinFile.pas,v 1.1 2003/11/29 11:57:08 jn Exp $
+// $Header: /home/itig/cvsroot/rawwrite/WinBinFile.pas,v 1.2 2003/12/01 11:57:37 jn Exp $
 
 
 interface
