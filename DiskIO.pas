@@ -20,6 +20,7 @@ type
     constructor Create;
     destructor Destroy; override;
     function SetDisk(Disk : Integer) : Boolean;
+    function SetDiskByName(Name : String) : Boolean;
 
     function ReadSector(SectorNo : LongInt; Buffer : Pointer; Count : LongInt) : Boolean;
     function WriteSector(SectorNo : LongInt; Buffer : Pointer; Count : LongInt) : Boolean;
@@ -31,10 +32,14 @@ type
     function ResetDisk : Boolean;
 
     function GetGeometry : TSectorInfo;
+
+    procedure SeekSector(Sector : Integer);
   private
     Ready      : Boolean;
     DLLHandle  : THandle16;
     Geometry   : TSectorInfo;
+
+    CurrentSector : Integer;
   end;
 
 implementation
@@ -49,6 +54,7 @@ begin
    try
       DLLHandle := LoadLib16(Path);
       Ready := False;
+      CurrentSector := 0;
    except
       on E : EFOpenError do
       begin
@@ -80,6 +86,35 @@ begin
       Ready := True;
    end;
 end;
+
+function T95Disk.SetDiskByName(Name : String) : Boolean;
+var
+   Letter : Char;
+   Disk : Integer;
+begin
+   Letter := UpperCase(Name)[1];
+
+   if Letter = 'A' then
+   begin
+      Disk := 0;
+   end
+   else if Letter = 'B' then
+   begin
+      Disk := 1;
+   end
+   else if Letter in ['C'..'Z'] then
+   begin
+      Disk := $80 + Ord(Letter) - Ord('C');
+   end
+   else
+   begin
+      Result := False;
+      exit;
+   end;
+   Result := SetDisk(Disk);
+
+end;
+
 
 function T95Disk.ResetDisk : Boolean;
 var
@@ -279,5 +314,11 @@ function T95Disk.GetGeometry : TSectorInfo;
 begin
    Result := Geometry;
 end;
+
+procedure T95Disk.SeekSector(Sector : Integer);
+begin
+   CurrentSector := Sector;
+end;
+
 
 end.
