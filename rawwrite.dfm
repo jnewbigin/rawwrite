@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 399
-  Top = 255
+  Left = 718
+  Top = 459
   BorderStyle = bsSingle
   Caption = 'RawWrite'
   ClientHeight = 349
@@ -109,6 +109,7 @@ object MainForm: TMainForm
   OldCreateOrder = True
   Position = poScreenCenter
   OnCreate = FormCreate
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object Label2: TLabel
@@ -227,21 +228,21 @@ object MainForm: TMainForm
     TabOrder = 1
     OnDrawItem = DriveComboBoxDrawItem
   end
-  object Button3: TButton
+  object ExitButton: TButton
     Left = 272
     Top = 296
     Width = 75
     Height = 25
     Caption = 'E&xit'
     TabOrder = 2
-    OnClick = Button3Click
+    OnClick = ExitButtonClick
   end
   object PageControl1: TPageControl
     Left = 16
     Top = 88
     Width = 329
     Height = 193
-    ActivePage = TabSheet1
+    ActivePage = TabSheet2
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Write'
@@ -272,15 +273,16 @@ object MainForm: TMainForm
         Width = 161
         Height = 21
         TabOrder = 0
+        OnKeyPress = FileNameEditKeyPress
       end
-      object Button1: TButton
+      object BrowseWriteButton: TButton
         Left = 280
         Top = 32
         Width = 17
         Height = 21
         Caption = '...'
         TabOrder = 1
-        OnClick = Button1Click
+        OnClick = BrowseWriteButtonClick
       end
       object DebugMemo: TMemo
         Left = 8
@@ -344,14 +346,14 @@ object MainForm: TMainForm
         Height = 21
         TabOrder = 0
       end
-      object Button4: TButton
+      object BrowseReadButton: TButton
         Left = 280
         Top = 32
         Width = 17
         Height = 21
         Caption = '...'
         TabOrder = 1
-        OnClick = Button4Click
+        OnClick = BrowseReadButtonClick
       end
       object ReadButton: TButton
         Left = 238
@@ -470,6 +472,7 @@ object MainForm: TMainForm
     Top = 80
   end
   object SaveDialog1: TSaveDialog
+    DefaultExt = 'img'
     Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
     FilterIndex = 2
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]

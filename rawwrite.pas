@@ -19,19 +19,19 @@ type
     Label3: TLabel;
     Label4: TLabel;
     Label5: TLabel;
-    Button3: TButton;
+    ExitButton: TButton;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
     TabSheet2: TTabSheet;
     Label1: TLabel;
     FileNameEdit: TEdit;
-    Button1: TButton;
+    BrowseWriteButton: TButton;
     OpenDialog1: TOpenDialog;
     DebugMemo: TMemo;
     WriteButton: TButton;
     Label7: TLabel;
     ReadFileNameEdit: TEdit;
-    Button4: TButton;
+    BrowseReadButton: TButton;
     ReadButton: TButton;
     SaveDialog1: TSaveDialog;
     TabSheet3: TTabSheet;
@@ -52,19 +52,21 @@ type
     Label14: TLabel;
     Button6: TButton;
     AutoUpdate1: TAutoUpdate;
-    procedure Button1Click(Sender: TObject);
+    procedure BrowseWriteButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DriveComboBoxDrawItem(Control: TWinControl; Index: Integer;
       Rect: TRect; State: TOwnerDrawState);
     procedure WriteButtonClick(Sender: TObject);
     procedure Label5Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+    procedure ExitButtonClick(Sender: TObject);
     procedure Label3DblClick(Sender: TObject);
-    procedure Button4Click(Sender: TObject);
+    procedure BrowseReadButtonClick(Sender: TObject);
     procedure ReadButtonClick(Sender: TObject);
     procedure TabSheet3Show(Sender: TObject);
     procedure TabSheet5Show(Sender: TObject);
     procedure Button6Click(Sender: TObject);
+    procedure FileNameEditKeyPress(Sender: TObject; var Key: Char);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
     OSis95 : Boolean;
@@ -114,7 +116,7 @@ begin
    Screen.Cursor := crDefault;
 end;
 
-procedure TMainForm.Button1Click(Sender: TObject);
+procedure TMainForm.BrowseWriteButtonClick(Sender: TObject);
 begin
    OpenDialog1.FileName := FileNameEdit.Text;
    if OpenDialog1.Execute then
@@ -371,6 +373,11 @@ begin
       exit;
    end;
 
+   if Length(FileNameEdit.Text) = 0 then
+   begin
+      BrowseWriteButtonClick(BrowseWriteButton);
+   end;
+
    HadError := False;
 
    Wait;
@@ -519,7 +526,7 @@ begin
    ShellExecute(Handle, 'open', PChar(TLabel(Sender).Caption), nil, nil, SW_SHOWNORMAL)
 end;
 
-procedure TMainForm.Button3Click(Sender: TObject);
+procedure TMainForm.ExitButtonClick(Sender: TObject);
 begin
    Close;
 end;
@@ -531,7 +538,7 @@ begin
 //   WriteButton.Visible  := True;
 end;
 
-procedure TMainForm.Button4Click(Sender: TObject);
+procedure TMainForm.BrowseReadButtonClick(Sender: TObject);
 begin
    SaveDialog1.FileName := ReadFileNameEdit.Text;
    if SaveDialog1.Execute then
@@ -731,6 +738,28 @@ end;
 procedure TMainForm.Button6Click(Sender: TObject);
 begin
    AutoUpdate1.CheckForUpgrade(True);
+end;
+
+procedure TMainForm.FileNameEditKeyPress(Sender: TObject; var Key: Char);
+begin
+   if Key = #13 then
+   begin
+      Key := #0;
+{      if Length(FileNameEdit.Text) > 0 then
+      begin
+         WriteButtonClick(WriteButton);
+      end
+      else
+      begin
+         BrowseWriteButtonClick(BrowseWriteButton);
+      end;}
+         WriteButtonClick(WriteButton);
+   end;
+end;
+
+procedure TMainForm.FormShow(Sender: TObject);
+begin
+   FileNameEdit.SetFocus;
 end;
 
 end.

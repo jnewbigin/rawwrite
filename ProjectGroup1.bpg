@@ -9,7 +9,7 @@ MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
 DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
-PROJECTS = rawwritewin.exe itig.bpl dd.exe
+PROJECTS = rawwritewin.exe itig.bpl dd.exe rrstudio.exe rrstub.exe rrbuild.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -21,6 +21,15 @@ itig.bpl: ..\autoupdate\component\itig.dpk
   $(DCC)
 
 dd.exe: dd.dpr
+  $(DCC)
+
+rrstudio.exe: studio\rrstudio.dpr
+  $(DCC)
+
+rrstub.exe: studio\rrstub.dpr
+  $(DCC)
+
+rrbuild.exe: studio\rrbuild.dpr
   $(DCC)
 
 
