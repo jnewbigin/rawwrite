@@ -45,13 +45,13 @@ type
     UpDown1: TUpDown;
     TabSheet5: TTabSheet;
     Memo2: TMemo;
-    AutoUpdate1: TAutoUpdate;
     TabSheet6: TTabSheet;
     Label12: TLabel;
     Label6: TLabel;
     Label13: TLabel;
     Label14: TLabel;
     Button6: TButton;
+    AutoUpdate1: TAutoUpdate;
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DriveComboBoxDrawItem(Control: TWinControl; Index: Integer;
@@ -713,7 +713,7 @@ begin
 end;
 
 procedure TMainForm.Button6Click(Sender: TObject);
-begin        
+begin
    AutoUpdate1.CheckForUpgrade;
 end;
 
