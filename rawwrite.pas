@@ -137,6 +137,11 @@ begin
    // Prevent error messages being displayed by NT
    SetErrorMode(SEM_FAILCRITICALERRORS);
 
+   if AUTOUPDATE_VERSION < 102 then
+   begin
+      ShowMessage('AUTOUPDATE_VERSION is too old');
+   end;
+
    // what OS
    Version.dwOSVersionInfoSize := Sizeof(Version);
    if GetVersionEx(Version) then

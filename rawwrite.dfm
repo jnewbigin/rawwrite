@@ -241,7 +241,7 @@ object MainForm: TMainForm
     Top = 88
     Width = 329
     Height = 193
-    ActivePage = TabSheet1
+    ActivePage = TabSheet6
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Write'
