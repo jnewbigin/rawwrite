@@ -566,6 +566,7 @@ typedef struct _BIN_RESULTS {
 #endif // _WINIOCTL_
 {$endif}
 
+
 function CtlCode(DeviceType : DWORD; Func : DWord; Method : DWord; Access : DWord) : DWORD;
 //#define CTL_CODE( DeviceType, Function, Method, Access ) (                 \
 //    ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method) \

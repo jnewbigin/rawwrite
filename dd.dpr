@@ -30,6 +30,7 @@ var
    Skip        : Int64;
    BlockSize   : Int64;
    Progress    : Boolean;
+   Unmounts    : TStringList;
 
 //const AppVersion = '0.2';
 {
@@ -171,6 +172,7 @@ var
    Geometry   : TDISK_GEOMETRY;
    Len        : DWORD;
    Description : String;
+   VolumeLink : String;
 
    function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
@@ -272,9 +274,14 @@ begin
             if TestDevice(DeviceName, Description) then
             begin
                Log('\\?' + DeviceName);
+               VolumeLink := NativeReadLink(DeviceName);
+               if Length(VolumeLink) > 0 then
+               begin
+                  Log('  link to \\?' + VolumeLink);
+               end;
                if Length(Description) > 0 then
                begin
-                  Log('   ' + Description);
+                  Log('  ' + Description);
                end;
             end
          end;
@@ -296,9 +303,14 @@ begin
                   if TestDevice(DeviceName, Description) then
                   begin
                      Log('\\?' + DeviceName);
+                     VolumeLink := NativeReadLink(DeviceName);
+                     if Length(VolumeLink) > 0 then
+                     begin
+                        Log('  link to \\?' + VolumeLink);
+                     end;
                      if Length(Description) > 0 then
                      begin
-                        Log('   ' + Description);
+                        Log('  ' + Description);
                      end;
                   end
                end;
@@ -318,6 +330,7 @@ var
    VolumeName : String;
    MountPoints : TStringList;
    MountVolumes : TStringList;
+   VolumeLink : String;
    i : Integer;
    Drive : Char;
    DriveString : String;
@@ -333,6 +346,7 @@ begin
    else
    begin
       try
+         Log('Win32 Available Volume Information');
          LoadVolume;
          MountPoints := TStringList.Create;
          MountVolumes := TStringList.Create;
@@ -383,6 +397,12 @@ begin
             begin
                SetLength(VolumeName, strlen(PChar(VolumeName)));
                Log('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
+               // see where this symlink points...
+               VolumeLink := NativeReadLink('\??\' + Copy(VolumeName, 5, Length(VolumeName) - 5));
+               if Length(VolumeLink) > 0 then
+               begin
+                  Log('  link to \\?' + VolumeLink);
+               end;
                Log('  ' + GetDriveTypeDescription(GetDriveType(PChar(VolumeName))));
 
                MountCount := 0;
@@ -404,21 +424,6 @@ begin
                      MountCount := MountCount + 1;
                   end;
                end;
-               // find out where this volume is mounted....
-               {SetLength(MountPoint, 1024);
-               h2 := JFindFirstVolumeMountPoint(PChar(VolumeName), PChar(MountPoint), Length(MountPoint));
-               if h2 <> INVALID_HANDLE_VALUE then
-               begin
-                  while True do
-                  begin
-                     SetLength(MountPoint, strlen(PChar(MountPoint)));
-                     Log('  Mounted on ' + MountPoint);
-                     MountCount := MountCount + 1;
-                     SetLength(MountPoint, 1024);
-                     if not JFindNextVolumeMountPoint(h2, PChar(MountPoint), Length(MountPoint)) then break;
-                  end;
-                  JFindVolumeMountPointClose(h2);
-               end;}
 
                if MountCount = 0 then
                begin
@@ -438,6 +443,8 @@ begin
             // Volumes are not supported under NT4
          end;
       end;
+      Log('');
+      Log('NT Block Device Objects');
       PrintNT4BlockDevices;
    end;
 
@@ -517,7 +524,8 @@ var
    ProgressCallback : TDDProgress;
 begin
    UseWriteln;
-   Log('rawwrite dd for windows version ' + AppVersion + '.  Written by John Newbigin <jn@it.swin.edu.au>');
+   Log('rawwrite dd for windows version ' + AppVersion + '.');
+   Log('Written by John Newbigin <jn@it.swin.edu.au>');
    Log('This program is covered by the GPL.  See copying.txt for details');
    
    SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -558,6 +566,7 @@ begin
    Seek      := 0;
    Skip      := 0;
    Progress  := False;
+   Unmounts  := TStringList.Create;
    // count=
    // if=
    // of=
@@ -600,6 +609,10 @@ begin
       begin
          BlockSize := GetBlockSize(Value);
       end
+      else if StartsWith(ParamStr(i), '--unmount=', Value) then
+      begin
+         Unmounts.Add(Value);
+      end
       else
       begin
          Log('Unknown command ' +  ParamStr(i));
@@ -609,7 +622,23 @@ begin
 
    if (Action = 'dd') and (Length(InFile) = 0) then
    begin
-      Action := 'usage';
+      if Unmounts.Count > 0 then
+      begin
+         Action := 'unmount';
+      end
+      else
+      begin
+         Action := 'usage';
+      end;
+   end;
+
+   if (Action = 'dd') or (Action = 'unmount') then
+   begin
+      for i := 0 to Unmounts.Count - 1 do
+      begin
+         LoadVolume;
+         JDeleteVolumeMountPoint(PChar(Unmounts[i]));
+      end;
    end;
 
 //   Log('Action is ' + Action);
@@ -641,6 +670,10 @@ begin
             DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, nil);
          end;
       end;
+   end
+   else if Action = 'unmount' then
+   begin
+      // dummy target
    end
    else
    begin
