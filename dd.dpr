@@ -6,7 +6,8 @@ uses
   Classes,
   Native in 'Native.pas',
   volume in 'volume.pas',
-  WinBinFile in 'WinBinFile.pas';
+  WinBinFile in 'WinBinFile.pas',
+  WinIOCTL in 'WinIOCTL.pas';
 
 var
    Version : TOSVersionInfo;
@@ -89,8 +90,8 @@ var
    h, h2 : THandle;
    VolumeName : String;
    MountPoint : String;
-   MountPoints : TStringList;
-   i : Integer;
+//   MountPoints : TStringList;
+//   i : Integer;
    Drive : Char;
    DriveString : String;
    Buffer : String;
@@ -212,10 +213,27 @@ var
 
    Value : String;
    h : THandle;
+   Actual : Int64;
 
    Buffer : String;
    i : Integer;
+
+   FullBlocksIn : Int64;
+   HalfBlocksIn : Int64;
+   FullBlocksOut : Int64;
+   HalfBlocksOut : Int64;
 begin
+   Debug('InFile    = ' + InFile);
+   Debug('OutFile   = ' + OutFile);
+   Debug('BlockSize = ' + IntToStr(BlockSize));
+   Debug('Count     = ' + IntToStr(Count));
+   Debug('Skip      = ' + IntToStr(Skip));
+   Debug('Seek      = ' + IntToStr(Seek));
+
+   FullBlocksIn  := 0;
+   HalfBlocksIn  := 0;
+   FullBlocksOut := 0;
+   HalfBlocksOut := 0;
    // open the files....
    InBinFile := TBinaryFile.Create;
    if StartsWith(InFile, '\\?\', Value) then
@@ -253,19 +271,104 @@ begin
       Debug('skip to ' + IntToStr(InBinFile.GetPos));
    end;
 
-   for i := 1 to Count do
+   i := 0;
+   while (i < Count) or (Count = -1) do
    begin
       Debug('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
       SetLength(Buffer, BlockSize);
-      if InBinFile.BlockRead2(PChar(Buffer), BlockSize) <> BlockSize then
+      Actual := InBinFile.BlockRead2(PChar(Buffer), BlockSize);
+      Debug('actual = ' + IntToStr(Actual));
+      if Actual = BlockSize then
       begin
-         ShowError;
-         exit;
+         FullBlocksIn := FullBlocksIn + 1;
+      end
+      else if Actual > 0 then
+      begin
+         HalfBlocksIn := HalfBlocksIn + 1;
+      end
+      else
+      begin
+         if Windows.GetLastError > 0 then
+         begin
+            ShowError;
+         end;
+         break;
       end;
+      i := i + 1;
 //      Debug(Buffer);
    end;
 
+   Debug(IntToStr(FullBlocksIn)  + '+' + IntToStr(HalfBlocksIn)  + ' records in');
+   Debug(IntToStr(FullBlocksOut) + '+' + IntToStr(HalfBlocksOut) + ' records out');
 
+
+end;
+
+function GetBlockSize(S : String) : Int64;
+var
+   Suffix : String;
+begin
+   // see if there is a suffix to the block size
+   // c = 1
+   // w = 2
+   // d = 4
+   // q = 8
+   // k = 1024 kilo
+   // M = 1048576 Mega
+   // G = 1073741824 Giga
+   // T = 1099511627776 Tera
+   // P = 1125899906842624 Peta
+   // E = 1152921504606846976 Exa
+   // Z = 1180591620717411303424 Zetta
+   // Y = 1208925819614629174706176 Yotta
+
+   while Length(S) > 0 do
+   begin
+      if S[Length(S)] in ['a'..'z', 'A'..'Z'] then
+      begin
+         Suffix := S[Length(S)] + Suffix;
+         S := Copy(S, 1, Length(S) - 1);
+      end
+      else
+      begin
+         break;
+      end;
+   end;
+   //Debug(' n = ' + S);
+   Result := StrToInt64(S);
+   //Debug(' s = ' + Suffix);
+   if Suffix = 'c' then
+   begin
+   end
+   else if Suffix = 'w' then
+   begin
+      Result := Result * 2;
+   end
+   else if Suffix = 'd' then
+   begin
+      Result := Result * 4;
+   end
+   else if Suffix = 'q' then
+   begin
+      Result := Result * 8;
+   end
+   else if Suffix = 'k' then
+   begin
+      Result := Result * 1024;
+   end
+   else if Suffix = 'M' then
+   begin
+      Result := Result * 1048576;
+   end
+   else if Suffix = 'G' then
+   begin
+      Result := Result * 1073741824;
+   end
+   else
+   begin
+      Debug('Unknown suffix ' + Suffix);
+      Result := 0;
+   end
 end;
 
 var
@@ -306,9 +409,11 @@ begin
    end;
 
    // check the command line parameters
-   Action := 'dd';
-   Count := -1;
+   Action    := 'dd';
+   Count     := -1;
    BlockSize := 1;
+   Seek      := 0;
+   Skip      := 0;
    // count=
    // if=
    // of=
@@ -345,7 +450,7 @@ begin
       end
       else if StartsWith(ParamStr(i), 'bs=', Value) then
       begin
-         BlockSize := StrToInt64(Value);
+         BlockSize := GetBlockSize(Value);
       end
       else
       begin
@@ -365,16 +470,16 @@ begin
    end
    else if Action = 'dd' then
    begin
-      Count := Count * BlockSize;
+      Count := Count;
       Skip  := Skip * BlockSize;
       Seek  := Seek * Blocksize;
-      DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek);
+      if BlockSize > 0 then
+      begin
+         DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek);
+      end;
    end
    else
    begin
       Debug('Unknown action ' + Action);
    end;
-
-   readln;
-
 end.
