@@ -23,9 +23,15 @@ var
    Skip        : Int64;
    BlockSize   : Int64;
 
+
 procedure Debug(S : String);
 begin
    writeln(S);
+end;
+
+procedure ShowError(Action : String);
+begin
+   Debug('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
 end;
 
 procedure PrintUsage;
@@ -44,7 +50,7 @@ procedure GetListOfMountPoints(List : TStringList);
       while vh <> INVALID_HANDLE_VALUE do
       begin
          SetLength(Buffer, strlen(PChar(Buffer)));
-         Debug('Mount point = ' + Buffer);
+         //Debug('Mount point = ' + Buffer);
 
          Buffer := Volume + Buffer;
          List.Add(Buffer);
@@ -56,7 +62,7 @@ procedure GetListOfMountPoints(List : TStringList);
             vh := INVALID_HANDLE_VALUE;
          end;
       end;
-      Debug('No more mount points');
+      //Debug('No more mount points');
    end;
 
 var
@@ -72,7 +78,7 @@ begin
    while h <> INVALID_HANDLE_VALUE do
    begin
       SetLength(Buffer, strlen(PChar(Buffer)));
-      Debug('FindVolume' + Buffer);
+      //Debug('FindVolume' + Buffer);
       EnumerateVolumeMountPoints(Buffer);
 
       SetLength(Buffer, 1024);
@@ -84,14 +90,127 @@ begin
    end;
 end;
 
+procedure PrintNT4BlockDevices;
+var
+   DriveNo    : Integer;
+   PartNo     : Integer;
+   DeviceName : String;
+   Done       : Boolean;
+   ErrorNo    : DWORD;
+   Actual     : DWORD;
+
+   function TestDevice(DeviceName : String) : Boolean;
+   var
+      h : THandle;
+   begin
+      Result := False;
+
+      h := NTCreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+
+      if h <> INVALID_HANDLE_VALUE then
+      begin
+         try
+            Debug('Opened ' + DeviceName);
+            Result := True;
+         finally
+            CloseHandle(h);
+         end;
+      end
+      else
+      begin
+         ErrorNo := Native.GetLastError;
+         if ErrorNo = ERROR_FILE_NOT_FOUND then
+         begin
+            // does not matter
+         end
+         else if ErrorNo = ERROR_PATH_NOT_FOUND then
+         begin
+            // does not matter
+         end
+         else if ErrorNo = 5 then
+         begin
+//               MessageDlg('This program requires Administrator privilages to run', mtError, [mbOK], 0);
+         end
+         else if ErrorNo = ERROR_SHARING_VIOLATION then
+         begin
+            // in use (probably mounted)...
+            Result := True;
+         end
+         else
+         begin
+            ShowError('opening device');
+         end;
+      end;
+   end;
+begin
+   DriveNo := 0;
+
+   Done := False;
+
+   while not Done do
+   begin
+      PartNo := 0;
+      while True do
+      begin
+         DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
+         if TestDevice(DeviceName) then
+         begin
+            Debug('\\?' + DeviceName);
+            PartNo := PartNo + 1;
+         end
+         else
+         begin
+            if PartNo = 0 then
+            begin
+               Done := True;
+            end;
+            break;
+         end;
+      end;
+      DriveNo := DriveNo + 1;
+   end;
+
+   DriveNo := 0;
+   while True do
+   begin
+      DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
+      if TestDevice(DeviceName) then
+      begin
+         Debug('\\?' + DeviceName);
+         DriveNo := DriveNo + 1;
+      end
+      else
+      begin
+         break;
+      end;
+   end;
+
+   DriveNo := 0;
+   while True do
+   begin
+      DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
+      if TestDevice(DeviceName) then
+      begin
+         Debug('\\?' + DeviceName);
+         DriveNo := DriveNo + 1;
+      end
+      else
+      begin
+         break;
+      end;
+   end;
+
+end;
+
 
 procedure PrintBlockDevices;
 var
    h, h2 : THandle;
    VolumeName : String;
    MountPoint : String;
-//   MountPoints : TStringList;
-//   i : Integer;
+   MountPoints : TStringList;
+   MountVolumes : TStringList;
+   i : Integer;
    Drive : Char;
    DriveString : String;
    Buffer : String;
@@ -105,89 +224,113 @@ begin
    end
    else
    begin
-      LoadVolume;
-{      MountPoints := TStringList.Create;
-      GetListOfMountPoints(MountPoints);
-      for i := 0 to MountPoints.Count - 1 do
-      begin
-         Debug('mp=' + MountPoints[i]);
-      end;}
-
-      // volumes only work on 2k+
-      // for NT4 we need to search physicaldrive stuff.
-
-      for Drive := 'a' to 'z' do
-      begin
-         DriveString := Drive + ':\';
-
-         SetLength(Buffer, 1024);
-         if JGetVolumeNameForVolumeMountPoint(PChar(DriveString), PChar(Buffer), Length(Buffer)) then
+      try
+         LoadVolume;
+         MountPoints := TStringList.Create;
+         MountVolumes := TStringList.Create;
+         GetListOfMountPoints(MountPoints);
+         for i := 0 to MountPoints.Count - 1 do
          begin
-            SetLength(Buffer, strlen(PChar(Buffer)));
-            if Length(Buffer) > 0 then
+            //Debug('mp=' + MountPoints[i]);
+            SetLength(Buffer, 1024);
+            if JGetVolumeNameForVolumeMountPoint(PChar(MountPoints[i]), PChar(Buffer), Length(Buffer)) then
             begin
-//               Buffer := Copy(Buffer, 12, Length(Buffer) - 13);
-               VolumeLetter[Drive] := Buffer;
-//               Debug(DriveString + ' = ' + Buffer);
+               SetLength(Buffer, strlen(PChar(Buffer)));
+               MountVolumes.Add(Buffer);
+               //Debug('   ' + Buffer);
+            end
+            else
+            begin
+               MountVolumes.Add('');
             end;
          end;
-      end;
 
+         // volumes only work on 2k+
+         // for NT4 we need to search physicaldrive stuff.
 
-
-      SetLength(VolumeName, 1024);
-      h := JFindFirstVolume(PChar(VolumeName), Length(VolumeName));
-      if h <> INVALID_HANDLE_VALUE then
-      begin
-         while True do
+         for Drive := 'a' to 'z' do
          begin
-            SetLength(VolumeName, strlen(PChar(VolumeName)));
-            Debug('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
-            MountCount := 0;
-            // see if this matches a drive letter...
-            for Drive := 'a' to 'z' do
+            DriveString := Drive + ':\';
+
+            SetLength(Buffer, 1024);
+            if JGetVolumeNameForVolumeMountPoint(PChar(DriveString), PChar(Buffer), Length(Buffer)) then
             begin
-               if VolumeLetter[Drive] = VolumeName then
+               SetLength(Buffer, strlen(PChar(Buffer)));
+               if Length(Buffer) > 0 then
                begin
-                  Debug('  Mounted on ' + Drive + ':\');
-                  MountCount := MountCount + 1;
+   //               Buffer := Copy(Buffer, 12, Length(Buffer) - 13);
+                  VolumeLetter[Drive] := Buffer;
+   //               Debug(DriveString + ' = ' + Buffer);
                end;
             end;
-            // find out where this volume is mounted....
-            SetLength(MountPoint, 1024);
-            h2 := JFindFirstVolumeMountPoint(PChar(VolumeName), PChar(MountPoint), Length(MountPoint));
-            if h2 <> INVALID_HANDLE_VALUE then
-            begin
-               while True do
-               begin
-                  SetLength(MountPoint, strlen(PChar(MountPoint)));
-                  Debug('  Mounted on ' + MountPoint);
-                  MountCount := MountCount + 1;
-                  SetLength(MountPoint, 1024);
-                  if not JFindNextVolumeMountPoint(h2, PChar(MountPoint), Length(MountPoint)) then break;
-               end;
-               JFindVolumeMountPointClose(h2);
-            end;
-
-            if MountCount = 0 then
-            begin
-               Debug('  Not mounted');
-            end;
-
-            Debug('');
-
-            SetLength(VolumeName, 1024);
-            if not JFindNextVolume(h, PChar(VolumeName), Length(VolumeName)) then break;
          end;
-         JFindVolumeClose(h);
+
+
+
+         SetLength(VolumeName, 1024);
+         h := JFindFirstVolume(PChar(VolumeName), Length(VolumeName));
+         if h <> INVALID_HANDLE_VALUE then
+         begin
+            while True do
+            begin
+               SetLength(VolumeName, strlen(PChar(VolumeName)));
+               Debug('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
+               MountCount := 0;
+               // see if this matches a drive letter...
+               for Drive := 'a' to 'z' do
+               begin
+                  if VolumeLetter[Drive] = VolumeName then
+                  begin
+                     Debug('  Mounted on ' + Drive + ':\');
+                     MountCount := MountCount + 1;
+                  end;
+               end;
+               // see if this matches a mount point...
+               for i := 0 to MountPoints.Count - 1 do
+               begin
+                  if MountVolumes[i] = VolumeName then
+                  begin
+                     Debug('  Mounted on ' + MountPoints[i]);
+                     MountCount := MountCount + 1;
+                  end;
+               end;
+               // find out where this volume is mounted....
+               {SetLength(MountPoint, 1024);
+               h2 := JFindFirstVolumeMountPoint(PChar(VolumeName), PChar(MountPoint), Length(MountPoint));
+               if h2 <> INVALID_HANDLE_VALUE then
+               begin
+                  while True do
+                  begin
+                     SetLength(MountPoint, strlen(PChar(MountPoint)));
+                     Debug('  Mounted on ' + MountPoint);
+                     MountCount := MountCount + 1;
+                     SetLength(MountPoint, 1024);
+                     if not JFindNextVolumeMountPoint(h2, PChar(MountPoint), Length(MountPoint)) then break;
+                  end;
+                  JFindVolumeMountPointClose(h2);
+               end;}
+
+               if MountCount = 0 then
+               begin
+                  Debug('  Not mounted');
+               end;
+
+               Debug('');
+
+               SetLength(VolumeName, 1024);
+               if not JFindNextVolume(h, PChar(VolumeName), Length(VolumeName)) then break;
+            end;
+            JFindVolumeClose(h);
+         end;
+      except
+         on E : Exception do
+         begin
+            // Volumes are not supported under NT4
+         end;
       end;
+      PrintNT4BlockDevices;
    end;
-   
-end;
 
-procedure ShowError;
-begin
-   Debug('Error reading file ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
 end;
 
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
@@ -213,7 +356,8 @@ var
 
    Value : String;
    h : THandle;
-   Actual : Int64;
+   Actual : DWORD;
+   Actual2 : DWORD;
 
    Buffer : String;
    i : Integer;
@@ -239,8 +383,8 @@ begin
    if StartsWith(InFile, '\\?\', Value) then
    begin
       // do a native open
-      Value := '\??\' + Value;
-      Debug('ntopen ' + Value);
+      Value := '\' + Value;
+      //Debug('ntopen ' + Value);
       h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
       if h <> INVALID_HANDLE_VALUE then
       begin
@@ -248,18 +392,18 @@ begin
       end
       else
       begin
-         ShowError;
+         ShowError('native opening input file');
          exit;
       end;
    end
    else
    begin
-      // winbinfileit
+      // winbinfile it
       Debug('open ' + InFile);
       InBinFile.Assign(InFile);
       if not InBinFile.Open(OPEN_READ_ONLY) then
       begin
-         ShowError;
+         ShowError('opening input file');
          exit;
       end;
    end;
@@ -270,6 +414,48 @@ begin
       InBinFile.Seek(Skip);
       Debug('skip to ' + IntToStr(InBinFile.GetPos));
    end;
+
+   // open the output file
+   OutBinFile := TBinaryFile.Create;
+   if StartsWith(InFile, '\\?\', Value) then
+   begin
+      Debug('Native write NYI');
+{      // do a native open
+      Value := '\' + Value;
+      //Debug('ntopen ' + Value);
+      h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+      if h <> INVALID_HANDLE_VALUE then
+      begin
+         InBinFile.AssignHandle(h);
+      end
+      else
+      begin
+         ShowError('native opening file');
+         exit;
+      end;}
+   end
+   else
+   begin
+      // winbinfile it
+      Debug('open ' + OutFile);
+      OutBinFile.Assign(OutFile);
+      if not OutBinFile.CreateNew then
+      begin
+         if not OutBinFile.Open(OPEN_WRITE_ONLY) then
+         begin
+            ShowError('opening output file');
+            exit;
+         end;
+      end;
+   end;
+
+   // seek over the required amount of output
+   if Seek > 0 then
+   begin
+      OutBinFile.Seek(Seek);
+      Debug('seek to ' + IntToStr(OutBinFile.GetPos));
+   end;
+
 
    i := 0;
    while (i < Count) or (Count = -1) do
@@ -290,10 +476,42 @@ begin
       begin
          if Windows.GetLastError > 0 then
          begin
-            ShowError;
+            ShowError('reading file');
          end;
          break;
       end;
+
+
+      // write the output...
+      Debug('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
+      Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
+      if Actual2 = Actual then
+      begin
+         // full write
+         if Actual2 = BlockSize then
+         begin
+            FullBlocksOut := FullBlocksOut + 1;
+         end
+         else
+         begin
+            HalfBlocksOut := HalfBlocksOut + 1;
+         end;
+      end
+      else if Actual2 > 0 then
+      begin
+         // partial write
+         // this is half of a half, what do we call that???
+         HalfBlocksOut := HalfBlocksOut + 2; // ??
+      end
+      else
+      begin
+         if Windows.GetLastError > 0 then
+         begin
+            ShowError('writing file');
+         end;
+         break;
+      end;
+
       i := i + 1;
 //      Debug(Buffer);
    end;
@@ -337,8 +555,9 @@ begin
    //Debug(' n = ' + S);
    Result := StrToInt64(S);
    //Debug(' s = ' + Suffix);
-   if Suffix = 'c' then
+   if (Suffix = 'c') or (Suffix = '') then
    begin
+      // no multipier
    end
    else if Suffix = 'w' then
    begin
@@ -411,7 +630,7 @@ begin
    // check the command line parameters
    Action    := 'dd';
    Count     := -1;
-   BlockSize := 1;
+   BlockSize := 512; // ?
    Seek      := 0;
    Skip      := 0;
    // count=

@@ -1,5 +1,5 @@
 unit WinBinFile;
-// $Header: /home/itig/cvsroot/ext2ifs/iotest/WinBinFile.pas,v 1.1 2003/01/26 07:50:38 jn Exp $
+// $Header: /home/itig/cvsroot/rawwrite/WinBinFile.pas,v 1.1 2003/11/29 11:57:08 jn Exp $
 
 
 interface
@@ -8,6 +8,7 @@ uses Windows, WinIOCTL;
 
 const OPEN_READ_ONLY = 0;
 const OPEN_READ_WRITE = 1;
+const OPEN_WRITE_ONLY = 2;
 
 type
    TBinaryFile = class
@@ -55,7 +56,7 @@ type
 //         procedure BlockRead(var Buf; Count: Integer);
          function BlockRead2(Buf : Pointer; Count: Integer) : DWord;
 //         procedure BlockWrite(var Buf; Count: Integer);
-         procedure BlockWrite2(Buf : Pointer; Count: Integer);
+         function BlockWrite2(Buf : Pointer; Count: Integer) : DWord;
 
 //         function EOF : Boolean;
          function FileSize : Int64;
@@ -115,9 +116,13 @@ begin
       Result := True;
       exit;
    end;
-   if Mode = 1 then
+   if Mode = OPEN_READ_WRITE then
    begin
       OpenMode := GENERIC_READ or GENERIC_WRITE;
+   end
+   else if Mode = OPEN_WRITE_ONLY then
+   begin
+      OpenMode := GENERIC_WRITE;
    end
    else
    begin
@@ -376,7 +381,7 @@ begin
    Result := Actual;
 end;
 
-procedure TBinaryFile.BlockWrite2(Buf : Pointer; Count: Integer);
+function TBinaryFile.BlockWrite2(Buf : Pointer; Count: Integer) : DWORD;
 var
    Actual : DWord;
 begin
@@ -385,6 +390,7 @@ begin
       Open(1);
    end;
    WriteFile2(F, Buf, Count, Actual, nil);
+   Result := Actual;
 end;
 
 function TBinaryFile.FileSize : Int64;
