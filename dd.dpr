@@ -23,6 +23,25 @@ var
    Skip        : Int64;
    BlockSize   : Int64;
 
+const AppVersion = '0.2';
+{
+    dd for windows
+    Copyright (C) 2003 John Newbigin <jn@it.swin.edu.au>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+}
 
 procedure Debug(S : String);
 begin
@@ -36,7 +55,11 @@ end;
 
 procedure PrintUsage;
 begin
-   Debug('dd [bs=BYTES] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list]');
+   Debug('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list]');
+   Debug('SIZE may have one of the following suffix:');
+   Debug(' k = 1024');
+   Debug(' M = 1048576');
+   Debug(' G = 1073741824');
 end;
 
 procedure GetListOfMountPoints(List : TStringList);
@@ -97,21 +120,36 @@ var
    DeviceName : String;
    Done       : Boolean;
    ErrorNo    : DWORD;
-   Actual     : DWORD;
+   Geometry   : TDISK_GEOMETRY;
+   Len        : DWORD;
+   Description : String;
 
-   function TestDevice(DeviceName : String) : Boolean;
+   function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
       h : THandle;
    begin
       Result := False;
+      Description := '';
 
       h := NTCreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
 
       if h <> INVALID_HANDLE_VALUE then
       begin
          try
-            Debug('Opened ' + DeviceName);
+            //Debug('Opened ' + DeviceName);
             Result := True;
+
+            // get the geometry...
+            if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
+            begin
+               //Debug('Block size = ' + IntToStr(Geometry.BytesPerSector));
+               //Debug('Media type = ' + MediaDescription(Geometry.MediaType));
+               Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
+            end
+            else
+            begin
+               //ShowError('reading geometry');
+            end;
          finally
             CloseHandle(h);
          end;
@@ -150,13 +188,18 @@ begin
    while not Done do
    begin
       PartNo := 0;
+
       while True do
       begin
          DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
-         if TestDevice(DeviceName) then
+         if TestDevice(DeviceName, Description) then
          begin
             Debug('\\?' + DeviceName);
             PartNo := PartNo + 1;
+            if Length(Description) > 0 then
+            begin
+               Debug('   ' + Description);
+            end;
          end
          else
          begin
@@ -174,10 +217,14 @@ begin
    while True do
    begin
       DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
-      if TestDevice(DeviceName) then
+      if TestDevice(DeviceName, Description) then
       begin
          Debug('\\?' + DeviceName);
          DriveNo := DriveNo + 1;
+         if Length(Description) > 0 then
+         begin
+            Debug('   ' + Description);
+         end;
       end
       else
       begin
@@ -189,10 +236,14 @@ begin
    while True do
    begin
       DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
-      if TestDevice(DeviceName) then
+      if TestDevice(DeviceName, Description) then
       begin
          Debug('\\?' + DeviceName);
          DriveNo := DriveNo + 1;
+         if Length(Description) > 0 then
+         begin
+            Debug('   ' + Description);
+         end;
       end
       else
       begin
@@ -205,9 +256,8 @@ end;
 
 procedure PrintBlockDevices;
 var
-   h, h2 : THandle;
+   h : THandle;
    VolumeName : String;
-   MountPoint : String;
    MountPoints : TStringList;
    MountVolumes : TStringList;
    i : Integer;
@@ -367,12 +417,12 @@ var
    FullBlocksOut : Int64;
    HalfBlocksOut : Int64;
 begin
-   Debug('InFile    = ' + InFile);
-   Debug('OutFile   = ' + OutFile);
-   Debug('BlockSize = ' + IntToStr(BlockSize));
-   Debug('Count     = ' + IntToStr(Count));
-   Debug('Skip      = ' + IntToStr(Skip));
-   Debug('Seek      = ' + IntToStr(Seek));
+//   Debug('InFile    = ' + InFile);
+//   Debug('OutFile   = ' + OutFile);
+//   Debug('BlockSize = ' + IntToStr(BlockSize));
+//   Debug('Count     = ' + IntToStr(Count));
+//   Debug('Skip      = ' + IntToStr(Skip));
+//   Debug('Seek      = ' + IntToStr(Seek));
 
    FullBlocksIn  := 0;
    HalfBlocksIn  := 0;
@@ -399,7 +449,7 @@ begin
    else
    begin
       // winbinfile it
-      Debug('open ' + InFile);
+      //Debug('open ' + InFile);
       InBinFile.Assign(InFile);
       if not InBinFile.Open(OPEN_READ_ONLY) then
       begin
@@ -412,18 +462,18 @@ begin
    if Skip > 0 then
    begin
       InBinFile.Seek(Skip);
-      Debug('skip to ' + IntToStr(InBinFile.GetPos));
+      //Debug('skip to ' + IntToStr(InBinFile.GetPos));
    end;
 
    // open the output file
    OutBinFile := TBinaryFile.Create;
-   if StartsWith(InFile, '\\?\', Value) then
+   if StartsWith(OutFile, '\\?\', Value) then
    begin
-      Debug('Native write NYI');
-{      // do a native open
+//      Debug('Native write NYI');
+      // do a native open
       Value := '\' + Value;
       //Debug('ntopen ' + Value);
-      h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+      h := NTCreateFile(PChar(Value), GENERIC_WRITE, 0, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
       if h <> INVALID_HANDLE_VALUE then
       begin
          InBinFile.AssignHandle(h);
@@ -432,12 +482,12 @@ begin
       begin
          ShowError('native opening file');
          exit;
-      end;}
+      end;
    end
    else
    begin
       // winbinfile it
-      Debug('open ' + OutFile);
+      //Debug('open ' + OutFile);
       OutBinFile.Assign(OutFile);
       if not OutBinFile.CreateNew then
       begin
@@ -453,7 +503,7 @@ begin
    if Seek > 0 then
    begin
       OutBinFile.Seek(Seek);
-      Debug('seek to ' + IntToStr(OutBinFile.GetPos));
+      //Debug('seek to ' + IntToStr(OutBinFile.GetPos));
    end;
 
 
@@ -518,7 +568,6 @@ begin
 
    Debug(IntToStr(FullBlocksIn)  + '+' + IntToStr(HalfBlocksIn)  + ' records in');
    Debug(IntToStr(FullBlocksOut) + '+' + IntToStr(HalfBlocksOut) + ' records out');
-
 
 end;
 
@@ -594,7 +643,8 @@ var
    i : Integer;
    Value : String;
 begin
-   writeln('rawwrite dd for windows.  Written by John Newbigin <jn@it.swin.edu.au>');
+   Debug('rawwrite dd for windows version ' + AppVersion + '.  Written by John Newbigin <jn@it.swin.edu.au>');
+   Debug('This program is covered by the GPL.  See copying.txt for details');
    
    SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -676,6 +726,11 @@ begin
          Debug('Unknown command ' +  ParamStr(i));
          Action := 'usage';
       end;
+   end;
+
+   if (Action = 'dd') and (Length(InFile) = 0) then
+   begin
+      Action := 'usage';
    end;
 
 //   Debug('Action is ' + Action);
