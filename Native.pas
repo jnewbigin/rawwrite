@@ -15,7 +15,8 @@ const
   OBJ_VALID_ATTRIBUTES =   $000001F2;
 
 
-  DIRECTORY_QUERY =        $0001;
+  DIRECTORY_QUERY       = $0001;
+  SYMBOLIC_LINK_QUERY   = $0001;
 
   /////////////////////////////
 
@@ -209,7 +210,28 @@ type
 		{IN OUT} ObjectIndex : PULONG;
 		{OUT} DataWritten : PULONG) : NTSTATUS ; stdcall; // DataWritten can be NULL
 
+
+   NtOpenSymbolicLinkObject_t = function(
+		{OUT} SymLinkObjHandle  : PHANDLE;
+		{IN}  DesiredAccess     : ACCESS_MASK;
+		{IN}  ObjectAttributes  : POBJECT_ATTRIBUTES) : NTSTATUS; stdcall;
+
+   NtCreateSymbolicLinkObject_t = function(
+		{OUT} SymLinkObjHandle  : PHANDLE;
+		{IN}  DesiredAccess     : ACCESS_MASK;
+		{IN}  ObjectAttributes  : POBJECT_ATTRIBUTES;
+      {IN}  DestinationName   : PUNICODE_STRING) : NTSTATUS; stdcall;
+
+
+   NtQuerySymbolicLinkObject_t = function(
+		{IN}  SymLinkObjHandle  : HANDLE;
+		{OUT} LinkName          : PUNICODE_STRING; // resolved name of link
+		{OUT} DataWritten       : PULONG) : NTSTATUS; stdcall; // DataWritten can be NULL
+
+
    function NativeDir(Dir : WideString; List : TStringList) : Boolean;
+   function NativeReadLink(Link : WideString) : WideString;
+   function NativeCreateLink(Link : WideString; Dest : WideString) : Boolean;
 
 var
    NtOpenFile : NtOpenFile_t;
@@ -218,6 +240,9 @@ var
    RtlNtStatusToDosError : RtlNtStatusToDosError_t;
    NtOpenDirectoryObject : NtOpenDirectoryObject_t;
    NtQueryDirectoryObject : NtQueryDirectoryObject_t;
+   NtOpenSymbolicLinkObject : NtOpenSymbolicLinkObject_t;
+   NtQuerySymbolicLinkObject : NtQuerySymbolicLinkObject_t;
+   NtCreateSymbolicLinkObject : NtCreateSymbolicLinkObject_t;
 
 threadvar
    GetLastError : DWORD;
@@ -307,6 +332,30 @@ begin
       exit;
    end;
 
+   NtOpenSymbolicLinkObject := NtOpenSymbolicLinkObject_t(GetProcAddress( module_handle, 'NtOpenSymbolicLinkObject' ));
+
+   if not Assigned(NtOpenSymbolicLinkObject) then
+   begin
+      MessageDlg('Could not find NtOpenSymbolicLinkObject entry point in NTDLL.DLL', mtError, [mbOK], 0);
+      exit;
+   end;
+
+   NtQuerySymbolicLinkObject := NtQuerySymbolicLinkObject_t(GetProcAddress( module_handle, 'NtQuerySymbolicLinkObject' ));
+
+   if not Assigned(NtQuerySymbolicLinkObject) then
+   begin
+      MessageDlg('Could not find NtQuerySymbolicLinkObject entry point in NTDLL.DLL', mtError, [mbOK], 0);
+      exit;
+   end;
+
+   NtCreateSymbolicLinkObject := NtCreateSymbolicLinkObject_t(GetProcAddress( module_handle, 'NtCreateSymbolicLinkObject' ));
+
+   if not Assigned(NtCreateSymbolicLinkObject) then
+   begin
+      MessageDlg('Could not find NtCreateSymbolicLinkObject entry point in NTDLL.DLL', mtError, [mbOK], 0);
+      exit;
+   end;
+
    Result := True;
 
    SetupComplete := True;
@@ -364,7 +413,8 @@ begin
 						NULL,
 						NIL);
 
-   R := NtOpenFile(@Result, FILE_GENERIC_READ or SYNCHRONIZE, @ObjectAttributes, @Status, 0, FILE_SYNCHRONOUS_IO_NONALERT{FILE_NON_DIRECTORY_FILE});
+//   R := NtOpenFile(@Result, {FILE_GENERIC_READ or SYNCHRONIZE} dwDesiredAccess, @ObjectAttributes, @Status, 0, FILE_SYNCHRONOUS_IO_NONALERT{FILE_NON_DIRECTORY_FILE});
+   R := NtOpenFile(@Result, dwDesiredAccess or SYNCHRONIZE, @ObjectAttributes, @Status, 0, FILE_SYNCHRONOUS_IO_NONALERT);
 {   Debug('Status = 0x' + IntToHex(R, 8), DebugOff);
    Debug('Status.Status = 0x' + IntToHex(Status.Status, 8), DebugOff);
    Debug('Status.Information = 0x' + IntToHex(Status.Information, 8), DebugOff);}
@@ -428,7 +478,7 @@ var
 
 begin
    Result := True;
-   
+
    Setup;
 
    RtlInitUnicodeString(@UName, PWideChar(Dir));
@@ -487,6 +537,101 @@ begin
 				  pszDir);}
       Result := False;
   	end
+end;
+
+function NativeReadLink(Link : WideString) : WideString;
+var
+   UName             : UNICODE_STRING;
+   ObjectAttributes  : OBJECT_ATTRIBUTES;
+   Status            : NTSTATUS;
+   hObject           : HANDLE;
+   Data              : WideString;
+   dw                : ULONG;
+
+
+begin
+   Result := '';
+
+   Setup;
+
+   RtlInitUnicodeString(@UName, PWideChar(Link));
+
+   InitializeObjectAttributes (
+						@ObjectAttributes,
+						@UName,
+						OBJ_CASE_INSENSITIVE,
+						0,
+						nil);
+
+   Status := NtOpenSymbolicLinkObject(
+						@hObject,
+						SYMBOLIC_LINK_QUERY,
+						@ObjectAttributes);
+
+   if(NT_SUCCESS(Status)) then
+   begin
+      UName.Length := 0;
+      SetLength(Data, 1024);
+      UName.MaximumLength := Length(Data);
+      UName.Buffer := PWIDECHAR(Data);
+
+		Status := NtQuerySymbolicLinkObject(
+							hObject,
+                     @UName,
+							@dw);         // can be NULL
+
+		if(NT_SUCCESS(Status)) then
+      begin
+         SetLength(Data, UName.Length div 2);
+         Result := Data;
+      end;
+
+      CloseHandle(hObject);
+   end;
+end;
+
+function NativeCreateLink(Link : WideString; Dest : WideString) : Boolean;
+var
+   UName             : UNICODE_STRING;
+   ObjectAttributes  : OBJECT_ATTRIBUTES;
+   Status            : NTSTATUS;
+   hObject           : HANDLE;
+   Data              : UNICODE_STRING;
+   Errorno : DWORD;
+begin
+   Result := False;
+
+   Setup;
+
+   RtlInitUnicodeString(@UName, PWideChar(Link));
+   RtlInitUnicodeString(@Data, PWideChar(Dest));
+
+   InitializeObjectAttributes (
+						@ObjectAttributes,
+						@UName,
+						OBJ_CASE_INSENSITIVE,
+						0,
+						nil);
+
+   Status := NtCreateSymbolicLinkObject(
+						@hObject,
+						$000F0001,
+						@ObjectAttributes,
+                  @Data);
+
+   if(NT_SUCCESS(Status)) then
+   begin
+      Log('Link created');
+      Result := True;
+   end
+   else
+   begin
+      ErrorNo := RtlNtStatusToDosError(Status);
+
+      SetLastError(ErrorNo);
+      Log('Error: ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
+
+   end;
 end;
 
 
