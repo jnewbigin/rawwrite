@@ -404,6 +404,12 @@ begin
                Device := TWin95Disk.Create;
                TWin95Disk(Device).SetDiskNumber(DriveComboBox.ItemIndex);
                TWin95Disk(Device).SetOffset(0);
+               // read the 1st sector to settle the disk...
+               try
+                  Device.ReadPhysicalSector(1, 1, PChar(Buffer));
+               except
+               end;
+               TWin95Disk(Device).SetOffset(0);
             end
             else
             begin
@@ -583,6 +589,11 @@ begin
             Device := TWin95Disk.Create;
             TWin95Disk(Device).SetDiskNumber(DriveComboBox.ItemIndex);
             TWin95Disk(Device).SetOffset(0);
+            // read the 1st sector to settle the disk...
+            try
+               Device.ReadPhysicalSector(1, 1, PChar(Buffer));
+            except
+            end;
          end
          else
          begin
@@ -714,7 +725,7 @@ end;
 
 procedure TMainForm.Button6Click(Sender: TObject);
 begin
-   AutoUpdate1.CheckForUpgrade;
+   AutoUpdate1.CheckForUpgrade(True);
 end;
 
 end.

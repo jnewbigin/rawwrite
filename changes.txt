@@ -1,3 +1,6 @@
+Version 0.6
+Remove load time requirement for wininet.dll.
+
 Version 0.5
 Command line parameters
 Better error messages
