@@ -326,6 +326,7 @@ begin
    OutBinFile := nil;
    In95Disk   := nil;
    Out95Disk  := nil;
+   Out95SectorCount := 0;
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
@@ -399,7 +400,7 @@ begin
                h := NTCreateFile(PChar(Value), GENERIC_WRITE, 0, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
                if h <> INVALID_HANDLE_VALUE then
                begin
-                  InBinFile.AssignHandle(h);
+                  OutBinFile.AssignHandle(h);
                end
                else
                begin
@@ -450,7 +451,7 @@ begin
             begin
                FullBlocksIn := FullBlocksIn + 1;
             end
-            else if Actual > 0 then
+            else if Actual > 0 then // many USB devices don;t support this...
             begin
                HalfBlocksIn := HalfBlocksIn + 1;
             end
@@ -532,7 +533,10 @@ begin
             i := i + 1;
       //      Log(Buffer);
          end;
-
+         if Assigned(Callback) then
+         begin
+            Log('');
+         end;
          Log(IntToStr(FullBlocksIn)  + '+' + IntToStr(HalfBlocksIn)  + ' records in');
          Log(IntToStr(FullBlocksOut) + '+' + IntToStr(HalfBlocksOut) + ' records out');
       finally
