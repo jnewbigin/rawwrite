@@ -460,10 +460,10 @@ begin
    i := 0;
    while (i < Count) or (Count = -1) do
    begin
-      Debug('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
+      //Debug('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
       SetLength(Buffer, BlockSize);
       Actual := InBinFile.BlockRead2(PChar(Buffer), BlockSize);
-      Debug('actual = ' + IntToStr(Actual));
+      //Debug('actual = ' + IntToStr(Actual));
       if Actual = BlockSize then
       begin
          FullBlocksIn := FullBlocksIn + 1;
@@ -483,7 +483,7 @@ begin
 
 
       // write the output...
-      Debug('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
+      //Debug('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
       Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
       if Actual2 = Actual then
       begin
