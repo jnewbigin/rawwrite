@@ -65,13 +65,17 @@ var
    S : String;
    Len : Integer;
    i : Integer;
+   PerCent : Integer;
+   P : String;
 begin
    Result := False;
    if Count > 0 then
    begin
       // we know how many blocks so we can do a %
-   end
-   else
+      PerCent := Progress * 100 div (Count * BlockSize);
+      P := ' ' + IntToStr(PerCent) + '%';
+   end;
+//   else
    begin
       Number := IntToStr(Progress);
       Len := Length(Number);
@@ -84,7 +88,7 @@ begin
          end;
       end;
 
-      write(#13 + S);
+      write(#13 + S + P);
    end;
 end;
 
@@ -177,6 +181,7 @@ var
    function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
       h : THandle;
+      Size : _LARGE_INTEGER;
    begin
       Result := False;
       Description := '';
@@ -192,9 +197,9 @@ var
             // get the geometry...
             if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
             begin
-               //Log('Block size = ' + IntToStr(Geometry.BytesPerSector));
-               //Log('Media type = ' + MediaDescription(Geometry.MediaType));
                Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
+//               Size.QuadPart := Geometry.Cylinders.QuadPart * Geometry.TracksPerCylinder * Geometry.SectorsPerTrack * Geometry.BytesPerSector;
+//               Log('size = ' + IntToStr(Size.QuadPart));
             end
             else
             begin
@@ -611,7 +616,8 @@ begin
       end
       else if StartsWith(ParamStr(i), '--unmount=', Value) then
       begin
-         Unmounts.Add(Value);
+         // Not ready yet...
+         //Unmounts.Add(Value);
       end
       else
       begin

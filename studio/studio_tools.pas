@@ -439,6 +439,10 @@ begin
             //Log('seek to ' + IntToStr(OutBinFile.GetPos));
          end;
 
+         if Assigned(Callback) then
+         begin
+            Callback(BytesOut, Windows.GetLastError);
+         end;
 
          i := 0;
          while (i < Count) or (Count = -1) do
