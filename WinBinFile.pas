@@ -1,5 +1,5 @@
 unit WinBinFile;
-// $Header: /home/itig/cvsroot/rawwrite/WinBinFile.pas,v 1.2 2003/12/01 11:57:37 jn Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.3 2004/09/13 10:09:46 jnewbigin Exp $
 
 
 interface
@@ -107,6 +107,7 @@ end;
 function TBinaryFile.Open(Mode : Integer) : Boolean;
 var
    OpenMode : DWORD;
+   ShareMode : DWORD;
 begin
    // Mode 0 = read only
    // Mode 1 = read/write
@@ -119,17 +120,20 @@ begin
    if Mode = OPEN_READ_WRITE then
    begin
       OpenMode := GENERIC_READ or GENERIC_WRITE;
+      ShareMode := 0;
    end
    else if Mode = OPEN_WRITE_ONLY then
    begin
       OpenMode := GENERIC_WRITE;
+      ShareMode := 0; // ?
    end
    else
    begin
       OpenMode := GENERIC_READ;
+      ShareMode := FILE_SHARE_READ;
    end;
 
-   F := CreateFile(PChar(FileName), OpenMode, 0, nil, OPEN_EXISTING, 0, 0);
+   F := CreateFile(PChar(FileName), OpenMode, ShareMode, nil, OPEN_EXISTING, 0, 0);
    if F = INVALID_HANDLE_VALUE then
    begin
       IsOpen := False;
