@@ -7,7 +7,9 @@ uses
   Native in 'Native.pas',
   volume in 'volume.pas',
   WinBinFile in 'WinBinFile.pas',
-  WinIOCTL in 'WinIOCTL.pas';
+  WinIOCTL in 'WinIOCTL.pas',
+  studio_tools in 'studio\studio_tools.pas',
+  debug in 'studio\debug.pas';
 
 var
    Version : TOSVersionInfo;
@@ -23,7 +25,7 @@ var
    Skip        : Int64;
    BlockSize   : Int64;
 
-const AppVersion = '0.2';
+//const AppVersion = '0.2';
 {
     dd for windows
     Copyright (C) 2003 John Newbigin <jn@it.swin.edu.au>
@@ -43,23 +45,23 @@ const AppVersion = '0.2';
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 }
 
-procedure Debug(S : String);
+{procedure Debug(S : String);
 begin
    writeln(S);
-end;
+end;}
 
-procedure ShowError(Action : String);
+{procedure ShowError(Action : String);
 begin
    Debug('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
-end;
+end;}
 
 procedure PrintUsage;
 begin
-   Debug('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list]');
-   Debug('SIZE may have one of the following suffix:');
-   Debug(' k = 1024');
-   Debug(' M = 1048576');
-   Debug(' G = 1073741824');
+   Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list]');
+   Log('SIZE may have one of the following suffix:');
+   Log(' k = 1024');
+   Log(' M = 1048576');
+   Log(' G = 1073741824');
 end;
 
 procedure GetListOfMountPoints(List : TStringList);
@@ -73,7 +75,7 @@ procedure GetListOfMountPoints(List : TStringList);
       while vh <> INVALID_HANDLE_VALUE do
       begin
          SetLength(Buffer, strlen(PChar(Buffer)));
-         //Debug('Mount point = ' + Buffer);
+         //Log('Mount point = ' + Buffer);
 
          Buffer := Volume + Buffer;
          List.Add(Buffer);
@@ -85,7 +87,7 @@ procedure GetListOfMountPoints(List : TStringList);
             vh := INVALID_HANDLE_VALUE;
          end;
       end;
-      //Debug('No more mount points');
+      //Log('No more mount points');
    end;
 
 var
@@ -101,7 +103,7 @@ begin
    while h <> INVALID_HANDLE_VALUE do
    begin
       SetLength(Buffer, strlen(PChar(Buffer)));
-      //Debug('FindVolume' + Buffer);
+      //Log('FindVolume' + Buffer);
       EnumerateVolumeMountPoints(Buffer);
 
       SetLength(Buffer, 1024);
@@ -136,14 +138,14 @@ var
       if h <> INVALID_HANDLE_VALUE then
       begin
          try
-            //Debug('Opened ' + DeviceName);
+            //Log('Opened ' + DeviceName);
             Result := True;
 
             // get the geometry...
             if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
             begin
-               //Debug('Block size = ' + IntToStr(Geometry.BytesPerSector));
-               //Debug('Media type = ' + MediaDescription(Geometry.MediaType));
+               //Log('Block size = ' + IntToStr(Geometry.BytesPerSector));
+               //Log('Media type = ' + MediaDescription(Geometry.MediaType));
                Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
             end
             else
@@ -194,11 +196,11 @@ begin
          DeviceName := '\Device\Harddisk' + IntToStr(DriveNo) + '\Partition' + IntToStr(PartNo);
          if TestDevice(DeviceName, Description) then
          begin
-            Debug('\\?' + DeviceName);
+            Log('\\?' + DeviceName);
             PartNo := PartNo + 1;
             if Length(Description) > 0 then
             begin
-               Debug('   ' + Description);
+               Log('   ' + Description);
             end;
          end
          else
@@ -219,11 +221,11 @@ begin
       DeviceName := '\Device\Floppy' + IntToStr(DriveNo);
       if TestDevice(DeviceName, Description) then
       begin
-         Debug('\\?' + DeviceName);
+         Log('\\?' + DeviceName);
          DriveNo := DriveNo + 1;
          if Length(Description) > 0 then
          begin
-            Debug('   ' + Description);
+            Log('   ' + Description);
          end;
       end
       else
@@ -238,11 +240,11 @@ begin
       DeviceName := '\Device\CdRom' + IntToStr(DriveNo);
       if TestDevice(DeviceName, Description) then
       begin
-         Debug('\\?' + DeviceName);
+         Log('\\?' + DeviceName);
          DriveNo := DriveNo + 1;
          if Length(Description) > 0 then
          begin
-            Debug('   ' + Description);
+            Log('   ' + Description);
          end;
       end
       else
@@ -270,7 +272,7 @@ begin
    // search for block devices...
    if OSis95 then
    begin
-      Debug('--list is not available for Win95');
+      Log('--list is not available for Win95');
    end
    else
    begin
@@ -281,13 +283,13 @@ begin
          GetListOfMountPoints(MountPoints);
          for i := 0 to MountPoints.Count - 1 do
          begin
-            //Debug('mp=' + MountPoints[i]);
+            //Log('mp=' + MountPoints[i]);
             SetLength(Buffer, 1024);
             if JGetVolumeNameForVolumeMountPoint(PChar(MountPoints[i]), PChar(Buffer), Length(Buffer)) then
             begin
                SetLength(Buffer, strlen(PChar(Buffer)));
                MountVolumes.Add(Buffer);
-               //Debug('   ' + Buffer);
+               //Log('   ' + Buffer);
             end
             else
             begin
@@ -310,7 +312,7 @@ begin
                begin
    //               Buffer := Copy(Buffer, 12, Length(Buffer) - 13);
                   VolumeLetter[Drive] := Buffer;
-   //               Debug(DriveString + ' = ' + Buffer);
+   //               Log(DriveString + ' = ' + Buffer);
                end;
             end;
          end;
@@ -324,14 +326,14 @@ begin
             while True do
             begin
                SetLength(VolumeName, strlen(PChar(VolumeName)));
-               Debug('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
+               Log('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
                MountCount := 0;
                // see if this matches a drive letter...
                for Drive := 'a' to 'z' do
                begin
                   if VolumeLetter[Drive] = VolumeName then
                   begin
-                     Debug('  Mounted on ' + Drive + ':\');
+                     Log('  Mounted on ' + Drive + ':\');
                      MountCount := MountCount + 1;
                   end;
                end;
@@ -340,7 +342,7 @@ begin
                begin
                   if MountVolumes[i] = VolumeName then
                   begin
-                     Debug('  Mounted on ' + MountPoints[i]);
+                     Log('  Mounted on ' + MountPoints[i]);
                      MountCount := MountCount + 1;
                   end;
                end;
@@ -352,7 +354,7 @@ begin
                   while True do
                   begin
                      SetLength(MountPoint, strlen(PChar(MountPoint)));
-                     Debug('  Mounted on ' + MountPoint);
+                     Log('  Mounted on ' + MountPoint);
                      MountCount := MountCount + 1;
                      SetLength(MountPoint, 1024);
                      if not JFindNextVolumeMountPoint(h2, PChar(MountPoint), Length(MountPoint)) then break;
@@ -362,10 +364,10 @@ begin
 
                if MountCount = 0 then
                begin
-                  Debug('  Not mounted');
+                  Log('  Not mounted');
                end;
 
-               Debug('');
+               Log('');
 
                SetLength(VolumeName, 1024);
                if not JFindNextVolume(h, PChar(VolumeName), Length(VolumeName)) then break;
@@ -380,194 +382,6 @@ begin
       end;
       PrintNT4BlockDevices;
    end;
-
-end;
-
-function StartsWith(S : String; Start : String; var Value : String) : Boolean;
-var
-   p : Integer;
-begin
-   p := Pos(Start, S);
-   if p = 1 then
-   begin
-      Result := True;
-      Value := Copy(S, p + Length(Start), Length(S));
-   end
-   else
-   begin
-      Result := False;
-   end;
-end;
-
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64);
-var
-   InBinFile   : TBinaryFile;
-   OutBinFile  : TBinaryFile;
-
-   Value : String;
-   h : THandle;
-   Actual : DWORD;
-   Actual2 : DWORD;
-
-   Buffer : String;
-   i : Integer;
-
-   FullBlocksIn : Int64;
-   HalfBlocksIn : Int64;
-   FullBlocksOut : Int64;
-   HalfBlocksOut : Int64;
-begin
-//   Debug('InFile    = ' + InFile);
-//   Debug('OutFile   = ' + OutFile);
-//   Debug('BlockSize = ' + IntToStr(BlockSize));
-//   Debug('Count     = ' + IntToStr(Count));
-//   Debug('Skip      = ' + IntToStr(Skip));
-//   Debug('Seek      = ' + IntToStr(Seek));
-
-   FullBlocksIn  := 0;
-   HalfBlocksIn  := 0;
-   FullBlocksOut := 0;
-   HalfBlocksOut := 0;
-   // open the files....
-   InBinFile := TBinaryFile.Create;
-   if StartsWith(InFile, '\\?\', Value) then
-   begin
-      // do a native open
-      Value := '\' + Value;
-      //Debug('ntopen ' + Value);
-      h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
-      if h <> INVALID_HANDLE_VALUE then
-      begin
-         InBinFile.AssignHandle(h);
-      end
-      else
-      begin
-         ShowError('native opening input file');
-         exit;
-      end;
-   end
-   else
-   begin
-      // winbinfile it
-      //Debug('open ' + InFile);
-      InBinFile.Assign(InFile);
-      if not InBinFile.Open(OPEN_READ_ONLY) then
-      begin
-         ShowError('opening input file');
-         exit;
-      end;
-   end;
-
-   // skip over the required amount of input
-   if Skip > 0 then
-   begin
-      InBinFile.Seek(Skip);
-      //Debug('skip to ' + IntToStr(InBinFile.GetPos));
-   end;
-
-   // open the output file
-   OutBinFile := TBinaryFile.Create;
-   if StartsWith(OutFile, '\\?\', Value) then
-   begin
-//      Debug('Native write NYI');
-      // do a native open
-      Value := '\' + Value;
-      //Debug('ntopen ' + Value);
-      h := NTCreateFile(PChar(Value), GENERIC_WRITE, 0, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
-      if h <> INVALID_HANDLE_VALUE then
-      begin
-         InBinFile.AssignHandle(h);
-      end
-      else
-      begin
-         ShowError('native opening file');
-         exit;
-      end;
-   end
-   else
-   begin
-      // winbinfile it
-      //Debug('open ' + OutFile);
-      OutBinFile.Assign(OutFile);
-      if not OutBinFile.CreateNew then
-      begin
-         if not OutBinFile.Open(OPEN_WRITE_ONLY) then
-         begin
-            ShowError('opening output file');
-            exit;
-         end;
-      end;
-   end;
-
-   // seek over the required amount of output
-   if Seek > 0 then
-   begin
-      OutBinFile.Seek(Seek);
-      //Debug('seek to ' + IntToStr(OutBinFile.GetPos));
-   end;
-
-
-   i := 0;
-   while (i < Count) or (Count = -1) do
-   begin
-      //Debug('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
-      SetLength(Buffer, BlockSize);
-      Actual := InBinFile.BlockRead2(PChar(Buffer), BlockSize);
-      //Debug('actual = ' + IntToStr(Actual));
-      if Actual = BlockSize then
-      begin
-         FullBlocksIn := FullBlocksIn + 1;
-      end
-      else if Actual > 0 then
-      begin
-         HalfBlocksIn := HalfBlocksIn + 1;
-      end
-      else
-      begin
-         if Windows.GetLastError > 0 then
-         begin
-            ShowError('reading file');
-         end;
-         break;
-      end;
-
-
-      // write the output...
-      //Debug('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
-      Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
-      if Actual2 = Actual then
-      begin
-         // full write
-         if Actual2 = BlockSize then
-         begin
-            FullBlocksOut := FullBlocksOut + 1;
-         end
-         else
-         begin
-            HalfBlocksOut := HalfBlocksOut + 1;
-         end;
-      end
-      else if Actual2 > 0 then
-      begin
-         // partial write
-         // this is half of a half, what do we call that???
-         HalfBlocksOut := HalfBlocksOut + 2; // ??
-      end
-      else
-      begin
-         if Windows.GetLastError > 0 then
-         begin
-            ShowError('writing file');
-         end;
-         break;
-      end;
-
-      i := i + 1;
-//      Debug(Buffer);
-   end;
-
-   Debug(IntToStr(FullBlocksIn)  + '+' + IntToStr(HalfBlocksIn)  + ' records in');
-   Debug(IntToStr(FullBlocksOut) + '+' + IntToStr(HalfBlocksOut) + ' records out');
 
 end;
 
@@ -601,9 +415,9 @@ begin
          break;
       end;
    end;
-   //Debug(' n = ' + S);
+   //Log(' n = ' + S);
    Result := StrToInt64(S);
-   //Debug(' s = ' + Suffix);
+   //Log(' s = ' + Suffix);
    if (Suffix = 'c') or (Suffix = '') then
    begin
       // no multipier
@@ -634,7 +448,7 @@ begin
    end
    else
    begin
-      Debug('Unknown suffix ' + Suffix);
+      Log('Unknown suffix ' + Suffix);
       Result := 0;
    end
 end;
@@ -643,8 +457,9 @@ var
    i : Integer;
    Value : String;
 begin
-   Debug('rawwrite dd for windows version ' + AppVersion + '.  Written by John Newbigin <jn@it.swin.edu.au>');
-   Debug('This program is covered by the GPL.  See copying.txt for details');
+   UseWriteln;
+   Log('rawwrite dd for windows version ' + AppVersion + '.  Written by John Newbigin <jn@it.swin.edu.au>');
+   Log('This program is covered by the GPL.  See copying.txt for details');
    
    SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -674,7 +489,7 @@ begin
    end
    else
    begin
-      Debug('Could not get Version info!');
+      Log('Could not get Version info!');
    end;
 
    // check the command line parameters
@@ -692,7 +507,7 @@ begin
    // --list
    for i := 1 to ParamCount do
    begin
-      //Debug(ParamStr(i));
+      //Log(ParamStr(i));
       if ParamStr(i) = '--list' then
       begin
          Action := 'list';
@@ -723,7 +538,7 @@ begin
       end
       else
       begin
-         Debug('Unknown command ' +  ParamStr(i));
+         Log('Unknown command ' +  ParamStr(i));
          Action := 'usage';
       end;
    end;
@@ -733,7 +548,7 @@ begin
       Action := 'usage';
    end;
 
-//   Debug('Action is ' + Action);
+//   Log('Action is ' + Action);
    if Action = 'usage' then
    begin
       PrintUsage;
@@ -754,6 +569,6 @@ begin
    end
    else
    begin
-      Debug('Unknown action ' + Action);
+      Log('Unknown action ' + Action);
    end;
 end.
