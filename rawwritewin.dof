@@ -2,7 +2,7 @@
 A=1
 B=0
 C=0
-D=0
+D=1
 E=0
 F=0
 G=1
@@ -10,7 +10,7 @@ H=1
 I=1
 J=1
 K=0
-L=0
+L=1
 M=0
 N=1
 O=1
@@ -49,12 +49,8 @@ Conditionals=
 DebugSourceDirs=
 UsePackages=0
 [Parameters]
-RunParams=--read
+RunParams=test.img
 HostApplication=
-[Language]
-ActiveLang=
-ProjectLang=$00000C09
-RootDir=
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=0
@@ -70,9 +66,18 @@ DLL=0
 Locale=3081
 CodePage=1252
 [Version Info Keys]
+CompanyName=
+FileDescription=
 FileVersion=0.4.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
 [Excluded Packages]
 $(DELPHI)\Bin\DBWEBXPRT.BPL=Borland Web Wizard Package
+$(DELPHI)\Bin\dclite50.bpl=Borland Integrated Translation Environment
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
