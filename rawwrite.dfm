@@ -241,7 +241,7 @@ object MainForm: TMainForm
     Top = 88
     Width = 329
     Height = 193
-    ActivePage = TabSheet6
+    ActivePage = TabSheet1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Write'
@@ -267,9 +267,9 @@ object MainForm: TMainForm
         Caption = 'Number of copies'
       end
       object FileNameEdit: TEdit
-        Left = 104
+        Left = 112
         Top = 32
-        Width = 169
+        Width = 161
         Height = 21
         TabOrder = 0
       end
@@ -301,9 +301,9 @@ object MainForm: TMainForm
         OnClick = WriteButtonClick
       end
       object WriteCopyEdit: TEdit
-        Left = 104
+        Left = 112
         Top = 56
-        Width = 49
+        Width = 41
         Height = 21
         TabOrder = 4
         Text = '1'
@@ -326,21 +326,21 @@ object MainForm: TMainForm
       object Label7: TLabel
         Left = 8
         Top = 32
-        Width = 45
+        Width = 97
         Height = 13
-        Caption = 'Image file'
+        Caption = 'File to save image to'
       end
       object Label9: TLabel
         Left = 8
         Top = 8
-        Width = 239
+        Width = 285
         Height = 13
-        Caption = 'Use this tab to read an image file from a floppy disk'
+        Caption = 'Use this tab to read a floppy disk and store it as an image file'
       end
       object ReadFileNameEdit: TEdit
-        Left = 104
+        Left = 112
         Top = 32
-        Width = 169
+        Width = 161
         Height = 21
         TabOrder = 0
       end
