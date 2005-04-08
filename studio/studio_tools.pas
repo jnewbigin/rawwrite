@@ -22,8 +22,7 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 
 implementation
 
-uses zlib, sysutils, debug, native, winbinfile, diskio, unitPEFile,
-     unitResourceDetails, md5, dialogs, winioctl;
+uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc;
 
 procedure ShowError(Action : String);
 begin
@@ -104,57 +103,55 @@ begin
 end;
 
 
-// This implementation uses ResourceUtils http://www.wilsonc.demon.co.uk/d7resourceutils.htm
+// alas, I had to write my own
 // Data should already be compressed
 function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringList) : Boolean;
 var
    i : Integer;
-   PEResourceModule : TPEResourceModule;
-   NewResource : TResourceDetails;
    Len : Integer;
+   PEFile : TPEFile;
+   NewResource : TResourceTreeNode;
 begin
    Result := True;
 
-   PEResourceModule := TPEResourceModule.Create;
-   PEResourceModule.LoadFromFile(ExeName);
+   PEFile := TPEFile.Create(ExeName);
 
-
-   // dump out the current resources...
-
-   //Log('Resource count = ' + IntToStr(PEResourceModule.ResourceCount));
-{   for i := 0 to PEResourceModule.ResourceCount - 1 do
+   if Assigned(PEFile.GetRsrcRoot) then
    begin
-      Log(PEResourceModule.ResourceDetails[i].ResourceName);
-      Log(PEResourceModule.ResourceDetails[i].ResourceType);
-      //PEResourceModule.ResourceDetails[i].Parent
-   end;}
-
-
-{   Log('Deleting DISK resources');
-   i := 0;
-   while i < PEResourceModule.ResourceCount do
-   begin
-      if PEResourceModule.ResourceDetails[i].ResourceType = 'DISK' then
+      for i := 0 to Name.Count - 1 do
+//i := 4;
       begin
-         Log('Deleting resource called ' + PEResourceModule.ResourceDetails[i].ResourceName);
-         PEResourceModule.DeleteResource(i);
-      end
-      else
-      begin
-         i := i + 1;
+         Len := Length(Data[i]);
+         Log('Adding resource ' + Name[i] + ' (' + IntToStr(Len) + ')');
+
+         NewResource := PEFile.GetRsrcRoot.GetNodeByName('DISK');
+         if not Assigned(NewResource) then
+         begin
+            NewResource := PEFile.GetRsrcRoot.CreateNode;
+            NewResource.SetName('DISK');
+         end;
+         if Assigned(NewResource) then
+         begin
+            NewResource := NewResource.CreateNode;
+            if Assigned(NewResource) then
+            begin
+               NewResource.SetName(Name[i]);
+
+               // The data goes on the language node
+               NewResource := NewResource.CreateNode;
+               if Assigned(NewResource) then
+               begin
+                  NewResource.SetLeafData(Data[i], 0);
+               end;
+            end;
+         end;
       end;
-   end;}
-
-   for i := 0 to Name.Count - 1 do
-   begin
-      Len := Length(Data[i]);
-      Log('Adding resource ' + Name[i] + ' (' + IntToStr(Len) + ')');
-      NewResource := TResourceDetails.CreateResourceDetails(PEResourceModule, 0, Name[i], 'DISK', Len, PChar(Data[i]));
-      PEResourceModule.AddResource(NewResource);
    end;
 
-   PEResourceModule.SaveToFile(ExeName);
-   PEResourceModule.Free;
+   PEFile.Save;
+
+//   PEResourceModule.SaveToFile(ExeName);
+//   PEResourceModule.Free;
 end;
 
 
