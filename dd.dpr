@@ -12,9 +12,8 @@ uses
   WinIOCTL in 'WinIOCTL.pas',
   studio_tools in 'studio\studio_tools.pas',
   debug in 'studio\debug.pas',
-  unitPEFile in 'studio\resourceutils\unitPEFile.pas',
-  unitResourceDetails in 'studio\resourceutils\unitResourceDetails.pas',
-  md5 in 'studio\md5\md5.pas';
+  md5 in 'studio\md5\md5.pas',
+  persrc in 'studio\persrc.pas';
 
 var
    Version : TOSVersionInfo;

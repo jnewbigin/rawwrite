@@ -31,6 +31,7 @@ type
       Rect: TRect; State: TOwnerDrawState);
     procedure CancelButtonClick(Sender: TObject);
     procedure VerifyButtonClick(Sender: TObject);
+    procedure CheckListBox1ClickCheck(Sender: TObject);
   private
     { Private declarations }
     ProgressSize : Integer;
@@ -95,8 +96,20 @@ begin
       StatusBar1.Panels[1].Text := VersionString;
    end;
 
+   for i := 1 to ParamCount do
+   begin
+      if ParamStr(i) = '--verify' then
+      begin
+         VerifyButton.Visible := True;
+      end
+   end;
+   
    DiskInfo := TStringList.Create;
    Data := LoadDiskResource('DISKINFO');
+   try
+      Data := ZDecompressStr(Data);
+   except;
+   end;
    DiskInfo.Text := Data;
 
    if DiskInfo.Count > 0 then
@@ -154,7 +167,7 @@ end;
 function TStubForm.OnProgress(Progress : Int64; Error : DWORD) : Boolean;
 begin
    StatusBar1.Panels[0].Text := IntToStr((Progress * 100) div ProgressSize) + '%';
-//   IntToStr(Progress) + ' of ' + IntToStr(ProgressSize);
+   //Log(IntToStr(Progress) + ' of ' + IntToStr(ProgressSize));
    if Error > 0 then
    begin
       MessageDlg(SysErrorMessage(Error), mtError, [mbOK], 0);
@@ -181,6 +194,7 @@ var
    Dir : String;
    L : Integer;
    UsingFloppy : Boolean;
+   DoWrite : Boolean;
 begin
    try
       CancelButton.Tag := 0;
@@ -190,10 +204,12 @@ begin
       // see if we need to get a directory to save to
       if DriveComboBox.ItemIndex = DriveComboBox.Items.Count - 1 then
       begin
+         DoWrite := True;
          UsingFloppy := False;
       end
       else
       begin
+         DoWrite := False;
          UsingFloppy := True;
       end;
 
@@ -230,30 +246,36 @@ begin
 
             if UsingFloppy then
             begin
-               MessageDlg('Insert disk for ' + Chopper[0], mtInformation, [mbOK], 0);
-            end;
-
-            Data := LoadDiskResource(Chopper[4]);
-            try
-               Data := ZDecompressStr(Data);
-            except
-            end;
-            BinFile := TBinaryFile.Create;
-            try
-               BinFile.Assign(Dir + Chopper[0]);
-               BinFile.Delete;
-               BinFile.CreateNew;
-               BinFile.BlockWrite2(PChar(Data), Length(Data));
-               BinFile.Close;
-
-               if UsingFloppy then
+               if MessageDlg('Insert disk for ' + Chopper[0], mtInformation, mbOKCancel, 0) = mrOK then
                begin
-                  ProgressSize := Length(Data);
-                  DoDD(BinFile.GetFileName, DriveComboBox.Text, 1024, -1, 0, 0, OnProgress);
-                  BinFile.Delete;
+                  DoWrite := True;
                end;
-            finally
-               BinFile.Free;
+            end;
+
+            if DoWrite then
+            begin
+               Data := LoadDiskResource(Chopper[4]);
+               try
+                  Data := ZDecompressStr(Data);
+               except
+               end;
+               BinFile := TBinaryFile.Create;
+               try
+                  BinFile.Assign(Dir + Chopper[0]);
+                  BinFile.Delete;
+                  BinFile.CreateNew;
+                  BinFile.BlockWrite2(PChar(Data), Length(Data));
+                  BinFile.Close;
+
+                  if UsingFloppy then
+                  begin
+                     ProgressSize := Length(Data);
+                     DoDD(BinFile.GetFileName, DriveComboBox.Text, 1024 * 8, -1, 0, 0, OnProgress);
+                     BinFile.Delete;
+                  end;
+               finally
+                  BinFile.Free;
+               end;
             end;
          end;
       end;
@@ -408,6 +430,30 @@ begin
    if Length(Details) > 0 then
    begin
       MessageDlg(Details, mtError, [mbOK], 0);
+   end;
+end;
+
+procedure TStubForm.CheckListBox1ClickCheck(Sender: TObject);
+var
+   i : Integer;
+   Count : Integer;
+begin
+   Count := 0;
+   for i := 0 to CheckListBox1.Items.Count - 1 do
+   begin
+      if CheckListBox1.Checked[i] then
+      begin
+         Count := Count + 1;
+      end;
+   end;
+
+   if Count > 0 then
+   begin
+      WriteButton.Enabled := True;
+   end
+   else
+   begin
+      WriteButton.Enabled := False;
    end;
 end;
 

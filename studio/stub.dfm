@@ -113,6 +113,7 @@ object StubForm: TStubForm
     Top = 104
     Width = 257
     Height = 97
+    OnClickCheck = CheckListBox1ClickCheck
     ItemHeight = 13
     TabOrder = 0
     OnClick = CheckListBox1Click

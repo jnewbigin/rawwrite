@@ -9,8 +9,7 @@ MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$**
 DCC = $(ROOT)\bin\dcc32.exe $**
 BRCC = $(ROOT)\bin\brcc32.exe $**
 #------------------------------------------------------------------------------
-PROJECTS = rawwritewin.exe itig.bpl dd.exe rrstudio.exe rrstub.exe rrbuild.exe \
-  rrtool.exe
+PROJECTS = rawwritewin.exe itig.bpl dd.exe rrstudio.exe rrstub.exe rrtool.exe
 #------------------------------------------------------------------------------
 default: $(PROJECTS)
 #------------------------------------------------------------------------------
@@ -28,9 +27,6 @@ rrstudio.exe: studio\rrstudio.dpr
   $(DCC)
 
 rrstub.exe: studio\rrstub.dpr
-  $(DCC)
-
-rrbuild.exe: studio\rrbuild.dpr
   $(DCC)
 
 rrtool.exe: studio\rrtool.dpr

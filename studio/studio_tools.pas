@@ -119,7 +119,6 @@ begin
    if Assigned(PEFile.GetRsrcRoot) then
    begin
       for i := 0 to Name.Count - 1 do
-//i := 4;
       begin
          Len := Length(Data[i]);
          Log('Adding resource ' + Name[i] + ' (' + IntToStr(Len) + ')');
@@ -149,9 +148,6 @@ begin
    end;
 
    PEFile.Save;
-
-//   PEResourceModule.SaveToFile(ExeName);
-//   PEResourceModule.Free;
 end;
 
 
@@ -260,7 +256,7 @@ begin
          end;
 
 // we could compress the config info but it makes it hard to debug
-//         DataList.Add(ZCompressStr(Config.Text, zcMax));
+         DataList.Add(ZCompressStr(Config.Text, zcMax));
          NameList.Add('DISKINFO');
          DataList.Add(Config.Text);
 
