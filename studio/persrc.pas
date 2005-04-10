@@ -150,6 +150,7 @@ function Allign(n : dword; a : dword) : dword;
 
 implementation
 
+uses debug;
 
 constructor TPEFile.Create(FileName : String);
 var
@@ -271,7 +272,7 @@ end;
 
 procedure Debug(S : String);
 begin
-//   Form1.Debug(S);
+   //Log(S);
 end;
 
 function Allign(n : dword; a : dword) : dword;
@@ -810,7 +811,7 @@ begin
 
    // Save out the Data
 
-   HexDump(Buffer);
+   //HexDump(Buffer);
 
 //   SaveBuffer('rsrc.bin', Buffer);
    Result := Buffer;

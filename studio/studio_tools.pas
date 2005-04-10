@@ -12,7 +12,7 @@ function LoadDiskFile(FileName : String) : String;
 procedure SaveDiskFile(FileName : String; Data : String);
 function LoadDiskResource(Name : String) : String;
 function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringList) : Boolean;
-procedure CreateExe(FileName : String);
+procedure CreateExe(FileName : String; Stub : String);
 procedure ShowError(Action : String);
 procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
@@ -155,15 +155,33 @@ begin
 end;
 
 
-procedure CopyStub(Target : String);
+procedure CopyStub(Target : String; StubFile : String);
 var
    BinFile : TBinaryFile;
    Stub : String;
 begin
-   Stub := LoadDiskResource('STUB');
-   try
-      Stub := ZDecompressStr(Stub);
-   except
+   if Length(StubFile) = 0 then
+   begin
+      Stub := LoadDiskResource('STUB');
+      try
+         Stub := ZDecompressStr(Stub);
+      except
+      end;
+   end
+   else
+   begin
+      // use a specifc stub file
+      BinFile := TBinaryFile.Create;
+      try
+         BinFile.Assign(StubFile);
+         BinFile.Open(0);
+         SetLength(Stub, BinFile.FileSize);
+
+         BinFile.BlockRead2(PChar(Stub), Length(Stub));
+         BinFile.Close;
+      finally
+         BinFile.Free;
+      end;
    end;
    BinFile := TBinaryFile.Create;
    try
@@ -179,7 +197,7 @@ begin
 
 end;
 
-procedure CreateExe(FileName : String);
+procedure CreateExe(FileName : String; Stub : String);
 var
    Config : TStringList;
    Chopper : TStringList;
@@ -204,7 +222,7 @@ begin
       if Config.Count > 0 then
       begin
          Target := ChangeFileExt(FileName, '.exe');
-         CopyStub(Target);
+         CopyStub(Target, Stub);
          for i := 1 to Config.Count - 1 do
          begin
             Line := Trim(Config[i]);

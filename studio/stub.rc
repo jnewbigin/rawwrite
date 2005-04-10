@@ -1,0 +1,5 @@
+;DISKINFO DISK "stub.txt"
+;DISK99 DISK "boot.img"
+DISKIO DLL "../diskio.dll"
+
+

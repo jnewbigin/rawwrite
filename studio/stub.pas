@@ -388,7 +388,7 @@ var
 begin
    for i := 0 to CheckListBox1.Items.Count - 1 do
    begin
-      //if CheckListBox1.Checked[i] then
+//      if CheckListBox1.Checked[i] then
       begin
          Chopper := TStringList(CheckListBox1.Items.Objects[i]);
 
