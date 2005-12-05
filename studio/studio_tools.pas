@@ -1,9 +1,18 @@
 unit studio_tools;
 
-interface
-uses windows, classes;
+{$IFDEF FPC}
+{$MODE Delphi}
+{$ENDIF}
 
-const AppVersion = '0.3';
+interface
+
+{$IFDEF WIN32}
+uses windows, classes;
+{$ELSE}
+uses classes;
+{$ENDIF}
+
+const AppVersion = '0.4beta1';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
@@ -22,11 +31,19 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 
 implementation
 
+{$IFDEF WIN32}
 uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc;
+{$ELSE}
+uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
+{$ENDIF}
 
 procedure ShowError(Action : String);
 begin
+{$IFDEF WIN32}
    Log('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
+{$ELSE}
+   Log('Error ' + Action + ': perror NYI');
+{$ENDIF}
 end;
 
 function LoadDiskFile(FileName : String) : String;
@@ -64,7 +81,7 @@ begin
    end;
 end;
 
-
+{$IFDEF WIN32}
 function LoadDiskResource(Name : String) : String;
 var
    h : THandle;
@@ -101,6 +118,14 @@ begin
       // error
    end;
 end;
+{$ELSE}
+function LoadDiskResource(Name : String) : String;
+begin
+   // use my code to load it...
+   Log('LoadDiskResource NYI');
+   Result := '';
+end;
+{$ENDIF}
 
 
 // alas, I had to write my own
@@ -151,17 +176,22 @@ begin
 end;
 
 
-procedure CopyStub(Target : String; StubFile : String);
+function CopyStub(Target : String; StubFile : String) : Boolean;
 var
    BinFile : TBinaryFile;
    Stub : String;
 begin
+   Result := false;
    if Length(StubFile) = 0 then
    begin
       Stub := LoadDiskResource('STUB');
       try
-         Stub := ZDecompressStr(Stub);
+         Stub := Zlib.ZDecompressStr(Stub);
       except
+      end;
+      if Length(Stub) = 0 then
+      begin
+         exit;
       end;
    end
    else
@@ -187,6 +217,7 @@ begin
 
       BinFile.BlockWrite2(PChar(Stub), Length(Stub));
       BinFile.Close;
+      Result := True;
    finally
       BinFile.Free;
    end;
@@ -218,7 +249,11 @@ begin
       if Config.Count > 0 then
       begin
          Target := ChangeFileExt(FileName, '.exe');
-         CopyStub(Target, Stub);
+         if not CopyStub(Target, Stub) then
+         begin
+            Log('Can''t load stub resource.  Try using --stub');
+            exit;
+         end;
          for i := 1 to Config.Count - 1 do
          begin
             Line := Trim(Config[i]);
@@ -229,6 +264,8 @@ begin
                   Chopper.CommaText := Config[i];
                   if Chopper.Count = 4 then
                   begin
+                     if FileExists(Chopper[0]) then
+                     begin
                      Log('Loading ' + Chopper[0]);
                      Data := LoadDiskFile(Chopper[0]);
                      Checksum := MD5Print(MD5String(Data));
@@ -244,6 +281,11 @@ begin
                      TotalSize := TotalSize + Length(ZData);
 
                      Config[i] := Chopper.CommaText;
+                     end
+                     else
+                     begin
+                        Log('File not found ' + Chopper[0] + ' on line ' + IntToStr(i + 1));
+                     end;
                   end
                   else
                   begin
@@ -297,6 +339,7 @@ begin
    end;
 end;
 
+{$IFDEF WIN32}
 procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
 var
    InBinFile   : TBinaryFile;
@@ -568,7 +611,13 @@ begin
    end;
 
 end;
+{$ELSE}
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
+begin
+end;
+{$ENDIF}
 
+{$IFDEF WIN32}
 function GetDriveStrings(StringList : TStringList) : Boolean;
 var
    Error : DWORD;
@@ -623,6 +672,18 @@ begin
       Result := 'Unknown';
    end;
 end;
+{$ELSE}
+function GetDriveStrings(StringList : TStringList) : Boolean;
+begin
+   StringList.Add('/');
+   Result := True;
+end;
+
+function GetDriveTypeDescription(DriveType : Integer) : String;
+begin
+   Result := 'Fileststem';
+end;
+{$ENDIF}
 
 {
    boot.img,x86 boot disk,For CD install where booting from CD is not supported,TRUE

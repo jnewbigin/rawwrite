@@ -1,3 +1,7 @@
+0.3 -> 0.4
+==========
+- rrtool runs on Linux
+
 0.2 -> 0.3
 ==========
 - Modified native device scan to find noncontigiously numbered devices

@@ -43,7 +43,7 @@ OutputDir=
 UnitOutputDir=
 PackageDLLOutputDir=
 PackageDCPOutputDir=
-SearchPath=..\autoupdate\component
+SearchPath=H:\working\autoupdate\component
 Packages=Vcl40;Vclx40;Vcldb40;vcldbx40;VclSmp40;Qrpt40;TeeUI40;teedb40;tee40;dragdrop;ex2fs;test
 Conditionals=
 DebugSourceDirs=
@@ -51,6 +51,10 @@ UsePackages=0
 [Parameters]
 RunParams=
 HostApplication=
+[Language]
+ActiveLang=
+ProjectLang=$00000C09
+RootDir=
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=0
@@ -75,11 +79,10 @@ LegalTrademarks=
 OriginalFilename=
 ProductName=
 ProductVersion=1.0.0.0
-[Excluded Packages]
-$(DELPHI)\Bin\dclite50.bpl=Borland Integrated Translation Environment
 [HistoryLists\hlUnitAliases]
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlSearchPath]
-Count=1
-Item0=D:\users2\jn\working\autoupdate\component
+Count=2
+Item0=H:\working\autoupdate\component
+Item1=D:\users2\jn\working\autoupdate\component

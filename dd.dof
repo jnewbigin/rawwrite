@@ -86,5 +86,6 @@ $(DELPHI)\Bin\dclite50.bpl=Borland Integrated Translation Environment
 Count=1
 Item0=WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;
 [HistoryLists\hlSearchPath]
-Count=1
-Item0=D:\users2\jn\working\autoupdate\component
+Count=2
+Item0=H:\working\autoupdate\component
+Item1=D:\users2\jn\working\autoupdate\component

@@ -1,8 +1,16 @@
 unit persrc;
 
+{$IFDEF FPC}
+{$MODE Delphi}
+{$ENDIF}
+
 interface
 
+{$IFDEF WIN32}
 uses windows, classes, sysutils, winbinfile;
+{$ELSE}
+uses classes, sysutils, UnixBinFile;
+{$ENDIF}
 
 type TPEHeader = record
    magic                : array[0..3] of char; //PE#0#0
@@ -235,6 +243,7 @@ var
    RsrcData : String;
    DataSizeDelta : dword;
    Directory_Data : TDirectoryData;
+   Adjustment : dword;
 begin
    // we need to adjust the following sizes
    // PE Optional Header Image Size
@@ -243,7 +252,21 @@ begin
    // section length
 
    RsrcData := Tree_Root.Repack(Rsrc_Section_Header.virtual_address);
+
+   //Log('Rsrc len = ' + IntToStr(Length(RsrcData)));
    DataSizeDelta := Length(RsrcData) - Rsrc_Section_Header.data_size;
+   //Log('Delta = ' + IntToStr(DataSizeDelta));
+
+   if DataSizeDelta mod PE_Header.section_allignment <> 0 then
+   begin
+      // We need to adjust the size of the RsrcData to make this allign
+      Adjustment := PE_Header.section_allignment - (DataSizeDelta mod PE_Header.section_allignment);
+      Log('Adjusting size by ' + IntToStr(Adjustment));
+      SetLength(RsrcData, Length(RsrcData) + Adjustment);
+      //Log('New Rsrc len = ' + IntToStr(Length(RsrcData)));
+      DataSizeDelta := Length(RsrcData) - Rsrc_Section_Header.data_size;
+      //Log('New Delta = ' + IntToStr(DataSizeDelta));
+   end;
 
    Rsrc_Section_Header.virtual_size := Length(RsrcData);
    Rsrc_Section_Header.data_size := Length(RsrcData);
@@ -251,7 +274,7 @@ begin
    F.BlockWrite2(@Rsrc_Section_Header, sizeof(Rsrc_Section_Header));
 
    PE_Header.total_data_size := PE_Header.total_data_size + DataSizeDelta;
-   PE_Header.image_size := PE_Header.image_size + DataSizeDelta;
+   PE_Header.image_size := PE_Header.image_size + DataSizeDelta; //must be multiple of section_alignment
    F.Seek(PE_Offset);
    F.BlockWrite2(@PE_Header, sizeof(PE_Header));
 
@@ -280,7 +303,7 @@ var
    d : dword;
 begin
    d := n mod a;
-   if a <> 0 then
+   if d <> 0 then
    begin
       n := n + (a - d);
    end;

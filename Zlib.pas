@@ -9,7 +9,12 @@
 *****************************************************************************}
 
 unit ZLib;
-// $Header: /home/cvs/infoin2/client/Zlib.pas,v 1.3 2001/11/16 03:16:22 jn Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/Zlib.pas,v 1.1 2005/07/17 01:43:17 jnewbigin Exp $
+
+{$IFDEF FPC}
+{$MODE Delphi}
+{$LINKLIB z}
+{$ENDIF}
 
 interface
 
@@ -98,6 +103,10 @@ type
   end;
 
 {** zlib public routines ****************************************************}
+{$IFDEF FPC}
+{$CALLING CDECL}
+{$ENDIF}
+
 
 {*****************************************************************************
 *  ZCompress                                                                 *
@@ -150,6 +159,7 @@ implementation
 
 {** link zlib code **********************************************************}
 
+{$IFDEF WIN32}
 {$L zlib\deflate.obj}
 {$L zlib\inflate.obj}
 {$L zlib\infblock.obj}
@@ -159,6 +169,7 @@ implementation
 {$L zlib\inffast.obj}
 {$L zlib\trees.obj}
 {$L zlib\adler32.obj}
+{$ENDIF}
 
 {*****************************************************************************
 *  note: do not reorder the above -- doing so will result in external        *

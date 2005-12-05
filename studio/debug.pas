@@ -1,6 +1,10 @@
 unit debug;
 
-// $Header: /home/itig/cvsroot/scsi/debug.pas,v 1.2 2002/04/16 06:37:18 jn Exp $
+{$IFDEF FPC}
+{$MODE Delphi}
+{$ENDIF}
+
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/studio/debug.pas,v 1.1 2004/12/30 13:50:08 jnewbigin Exp $
 
 interface
 
@@ -34,7 +38,11 @@ end;
 
 procedure TWriteLine.WriteLine(S : String);
 begin
+{$IFDEF FPC}
+   Writeln(S + #13);
+{$ELSE}
    Writeln(S);
+{$ENDIF}
 end;
 
 procedure UseWriteln;
