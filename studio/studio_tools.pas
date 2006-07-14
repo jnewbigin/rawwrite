@@ -23,7 +23,8 @@ function LoadDiskResource(Name : String) : String;
 function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringList) : Boolean;
 procedure CreateExe(FileName : String; Stub : String);
 procedure ShowError(Action : String);
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
+function GetSize(h : THandle) : Int64;
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; StopType : Boolean; Callback : ProgressEvent);
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
 function EndsWith(S : String; Ends : String; var Value : String) : Boolean;
 function GetDriveStrings(StringList : TStringList) : Boolean;
@@ -32,7 +33,7 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 implementation
 
 {$IFDEF WIN32}
-uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc;
+uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc, MT19937;
 {$ELSE}
 uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
 {$ENDIF}
@@ -340,10 +341,38 @@ begin
 end;
 
 {$IFDEF WIN32}
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
+
+function GetSize(h : THandle) : Int64;
+var
+   NewDevice : String;
+   NewOffset : Int64;
+   NewLength : Int64;
+begin
+   if GetDiskExtents(h, NewDevice, NewOffset, NewLength) then
+   begin
+      Result := NewLength;
+   end
+   else
+   begin
+      Result := GetPartitionSize(h);
+   end;
+   if Result = 0 then
+   begin
+      Result := GetDiskSize(h);
+   end;
+end;
+
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; StopType : Boolean; Callback : ProgressEvent);
 var
    InBinFile   : TBinaryFile;
    OutBinFile  : TBinaryFile;
+
+   InSize : Int64;
+//   OutSize : Int64;
+   ThisBlock : Int64;
+
+   MagicZero   : Boolean;
+   MagicRandom : Boolean;
 
    In95Disk : T95Disk;
    Out95Disk : T95Disk;
@@ -377,14 +406,27 @@ begin
    BytesOut      := 0;
 
    InBinFile  := nil;
+   InSize     := 0;
    OutBinFile := nil;
    In95Disk   := nil;
    Out95Disk  := nil;
    Out95SectorCount := 0;
+
+   MagicZero := False;
+   MagicRandom := False;
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
-      if StartsWith(InFile, '\\:\', Value) then
+      if InFile = '/dev/zero' then
+      begin
+         MagicZero := True;
+      end
+      else if InFile = '/dev/random' then
+      begin
+         MagicRandom := True;
+         randomize_MT19937;
+      end
+      else if StartsWith(InFile, '\\:\', Value) then
       begin
          // a resource name
          Log('NYI Reading DISK ' + Value);
@@ -399,6 +441,10 @@ begin
          if h <> INVALID_HANDLE_VALUE then
          begin
             InBinFile.AssignHandle(h);
+            if StopType then
+            begin
+               InSize := GetSize(h);
+            end;
          end
          else
          begin
@@ -501,9 +547,33 @@ begin
          i := 0;
          while (i < Count) or (Count = -1) do
          begin
+
+            ThisBlock := BlockSize;
+            if StopType and (InSize > 0) then
+            begin
+               // for USB devices, make sure we don't read past the end of the device
+               if Skip + ((i + 1) * BlockSize) > InSize then
+               begin
+                  // we need to recuce the read size...
+                  ThisBlock := InSize - (Skip + (i * BlockSize));
+               end;
+            end;
             //Log('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
             SetLength(Buffer, BlockSize);
-            Actual := InBinFile.BlockRead2(PChar(Buffer), BlockSize);
+            if MagicZero then
+            begin
+               FillMemory(PChar(Buffer), BlockSize, 0);
+               Actual := BlockSize;
+            end
+            else if MagicRandom then
+            begin
+               FillBuffer_MT19937(PChar(Buffer), BlockSize);
+               Actual := BlockSize;
+            end
+            else
+            begin
+               Actual := InBinFile.BlockRead2(PChar(Buffer), ThisBlock);
+            end;
             //Log('actual = ' + IntToStr(Actual));
             if Actual = BlockSize then
             begin
@@ -586,6 +656,11 @@ begin
                begin
                   break;
                end;
+            end;
+
+            if ThisBlock < BlockSize then
+            begin
+               break;
             end;
 
             i := i + 1;

@@ -13,7 +13,8 @@ uses
   studio_tools in 'studio\studio_tools.pas',
   debug in 'studio\debug.pas',
   md5 in 'studio\md5\md5.pas',
-  persrc in 'studio\persrc.pas';
+  persrc in 'studio\persrc.pas',
+  MT19937 in 'studio\random\MT19937.pas';
 
 var
    Version : TOSVersionInfo;
@@ -29,9 +30,9 @@ var
    Skip        : Int64;
    BlockSize   : Int64;
    Progress    : Boolean;
+   CheckSize   : Boolean;
    Unmounts    : TStringList;
 
-//const AppVersion = '0.2';
 {
     dd for windows
     Copyright (C) 2003 John Newbigin <jn@it.swin.edu.au>
@@ -91,23 +92,16 @@ begin
    end;
 end;
 
-{procedure Debug(S : String);
-begin
-   writeln(S);
-end;}
-
-{procedure ShowError(Action : String);
-begin
-   Debug('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
-end;}
-
 procedure PrintUsage;
 begin
-   Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--list] [--progress]');
+   Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--size] [--list] [--progress]');
    Log('SIZE may have one of the following suffix:');
    Log(' k = 1024');
    Log(' M = 1048576');
    Log(' G = 1073741824');
+   Log('default block size (bs) is 512 bytes');
+   Log('skip specifies the starting offset of the input file (if)');
+   Log('seek specifies the starting offset of the output file (of)');
 end;
 
 procedure GetListOfMountPoints(List : TStringList);
@@ -176,14 +170,15 @@ var
    Len        : DWORD;
    Description : String;
    VolumeLink : String;
+   Size       : Int64;
 
    function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
       h : THandle;
-      Size : _LARGE_INTEGER;
    begin
       Result := False;
       Description := '';
+      Size := 0;
 
       h := NTCreateFile(PChar(DeviceName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
 
@@ -204,6 +199,7 @@ var
             begin
                //ShowError('reading geometry');
             end;
+            Size := GetSize(h);
          finally
             CloseHandle(h);
          end;
@@ -287,6 +283,10 @@ begin
                begin
                   Log('  ' + Description);
                end;
+               if Size > 0 then
+               begin
+                  Log('  size is ' + IntToStr(Size) + ' bytes');
+               end;
             end
          end;
       end;
@@ -316,6 +316,10 @@ begin
                      begin
                         Log('  ' + Description);
                      end;
+                     if Size > 0 then
+                     begin
+                        Log('  size is ' + IntToStr(Size) + ' bytes');
+                     end;
                   end
                end;
             end
@@ -325,8 +329,12 @@ begin
       Devices.Free;
       Harddisks.Free;
    end;
-end;
 
+   Log('');
+   Log('Virtual devices');
+   Log('/dev/zero');
+   Log('/dev/random');
+end;
 
 procedure PrintBlockDevices;
 var
@@ -415,7 +423,7 @@ begin
                begin
                   if VolumeLetter[Drive] = VolumeName then
                   begin
-                     Log('  Mounted on ' + Drive + ':\');
+                     Log('  Mounted on \\.\' + Drive + ':');
                      MountCount := MountCount + 1;
                   end;
                end;
@@ -570,6 +578,7 @@ begin
    Seek      := 0;
    Skip      := 0;
    Progress  := False;
+   CheckSize := False;
    Unmounts  := TStringList.Create;
    // count=
    // if=
@@ -588,6 +597,10 @@ begin
       else if ParamStr(i) = '--progress' then
       begin
          Progress := True;
+      end
+      else if ParamStr(i) = '--size' then
+      begin
+         CheckSize := True;
       end
       else if StartsWith(ParamStr(i), 'count=', Value) then
       begin
@@ -667,12 +680,12 @@ begin
             ProgressCallback := TDDProgress.Create;
             ProgressCallback.BlockSize := BlockSize;
             ProgressCallback.Count := Count;
-            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, ProgressCallback.DDProgress);
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, ProgressCallback.DDProgress);
             ProgressCallback.Free;
          end
          else
          begin
-            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, nil);
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, nil);
          end;
       end;
    end

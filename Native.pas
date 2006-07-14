@@ -233,6 +233,21 @@ type
    function NativeReadLink(Link : WideString) : WideString;
    function NativeCreateLink(Link : WideString; Dest : WideString) : Boolean;
 
+
+  type
+   DISK_EXTENT = record
+    DiskNumber       : ULONG;
+    StartingOffset   : LARGE_INTEGER;
+    ExtentLength     : LARGE_INTEGER;
+   end;
+   PDISK_EXTENT = ^DISK_EXTENT;
+
+   VOLUME_DISK_EXTENTS = record
+    NumberOfDiskExtents : ULONG;
+    Extents             : array[0..1] of DISK_EXTENT;
+   end;
+   PVOLUME_DISK_EXTENTS = ^VOLUME_DISK_EXTENTS;
+
 var
    NtOpenFile : NtOpenFile_t;
    NtReadFile : NtReadFile_t;
@@ -258,9 +273,14 @@ function NTCreateFile(lpFileName: PChar; dwDesiredAccess, dwShareMode: DWORD;
 function NTReadFile2(hFile: THandle; Buffer : Pointer; nNumberOfBytesToRead: DWORD;
     var lpNumberOfBytesRead: DWORD; lpOverlapped: POverlapped): BOOL;
 
+function GetDiskExtents(hFile: THandle; var Device : String; var Offset : Int64; var Len : Int64) : Boolean;
+function GetDiskSize(h : THandle) : Int64;
+function GetPartitionSize(h : THandle) : Int64;
+
+
 implementation
 
-uses Dialogs, SysUtils, debug;
+uses Dialogs, SysUtils, Debug;
 
 var
    SetupComplete : Boolean;
@@ -280,7 +300,8 @@ begin
 	module_handle := GetModuleHandle('ntdll.dll');
    if module_handle = 0 then
    begin
-      MessageDlg('Could not find NTDLL.DLL', mtError, [mbOK], 0);
+      //MessageDlg('Could not find NTDLL.DLL', mtError, [mbOK], 0);
+      // not running on NT, that's OK
       exit;
    end;
 
@@ -479,7 +500,11 @@ var
 begin
    Result := True;
 
-   Setup;
+   if not Setup then
+   begin
+      Result := False;
+      exit;
+   end;
 
    RtlInitUnicodeString(@UName, PWideChar(Dir));
 
@@ -634,6 +659,114 @@ begin
    end;
 end;
 
+function GetPartitionSize(h : THandle) : Int64;
+var
+   Buffer : String;
+   BytesReturned : DWORD;
+   P : PPARTITION_INFORMATION;
+begin
+   Result := 0;
+   SetLength(Buffer, 1024);
+   // #define IOCTL_DISK_GET_PARTITION_INFO   CTL_CODE(IOCTL_DISK_BASE, 0x0001, METHOD_BUFFERED, FILE_READ_ACCESS)
+   if DeviceIoControl(h,CtlCode(IOCTL_DISK_BASE, $01, METHOD_BUFFERED, FILE_READ_ACCESS), nil, 0, PChar(Buffer), Length(Buffer), BytesReturned, nil) then
+   begin
+      P := PPARTITION_INFORMATION(PChar(Buffer));
+      Result := P.PartitionLength.QuadPart;
+   end;
+end;
+
+function GetDiskSize(h : THandle) : Int64;
+var
+   Buffer : String;
+   BytesReturned : DWORD;
+   G : PDISK_GEOMETRY_EX;
+   Size : LARGE_INTEGER;
+   Error : DWORD;
+   Read : DWORD;
+begin
+   Result := 0;
+   SetLength(Buffer, 1024);
+   // IOCTL_DISK_GET_DRIVE_GEOMETRY_EX
+   if DeviceIoControl(h,CtlCode(IOCTL_DISK_BASE, $28, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, PChar(Buffer), Length(Buffer), BytesReturned, nil) then
+   begin
+      G := PDISK_GEOMETRY_EX(PChar(Buffer));
+      //Log('Disk size is ' + IntToStr(G.DiskSize.QuadPart));
+      Result := G.DiskSize.QuadPart;
+   end
+   else
+   begin
+      // the old way...  This is not accurate
+      // IOCTL_DISK_GET_DRIVE_GEOMETRY   CTL_CODE(IOCTL_DISK_BASE, 0x0000, METHOD_BUFFERED, FILE_ANY_ACCESS)
+      if DeviceIoControl(h,CtlCode(IOCTL_DISK_BASE, $0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, PChar(Buffer), Length(Buffer), BytesReturned, nil) then
+      begin
+         G := PDISK_GEOMETRY_EX(PChar(Buffer));
+         //Log(IntToStr(G.Geometry.Cylinders.QuadPart));
+         //Log(IntToStr(G.Geometry.TracksPerCylinder));
+         //Log(IntToStr(G.Geometry.SectorsPerTrack));
+         Result := G.Geometry.Cylinders.QuadPart * (G.Geometry.TracksPerCylinder {+ 1}) * (G.Geometry.SectorsPerTrack {+ 1}) * G.Geometry.BytesPerSector;
+         //Log('Total = ' + IntToStr(Result));
+
+         // Fish around for the correct value...
+         // This can break USB devices, but USB is not supported on NT4
+         while true do
+         begin
+            Size.QuadPart := Result;
+            Size.LowPart := SetFilePointer(h, Size.LowPart, @Size.HighPart, FILE_BEGIN);
+            if Size.LowPart = $FFFFFFFF then
+            begin
+               Error := GetLastError;
+               if Error <> NO_ERROR then
+               begin
+                  //Log(SysErrorMessage(GetLastError));
+                  break;
+               end;
+            end;
+            if ReadFile2(h, PChar(Buffer), 512, Read, nil) then
+            begin
+               Result := Result + 512;
+            end
+            else
+            begin
+               break;
+            end;
+         end;
+         //Log('Total = ' + IntToStr(Result));
+      end;
+   end;
+end;
+
+function GetDiskExtents(hFile: THandle; var Device : String; var Offset : Int64; var Len : Int64) : Boolean;
+var
+   Buffer : String;
+   Volume : PVOLUME_DISK_EXTENTS;
+   BytesReturned : DWORD;
+   i : Integer;
+begin
+   SetLength(Buffer, 1024);
+   Result := False;
+
+   // IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS
+   if DeviceIoControl(hFile, CtlCode(IOCTL_VOLUME_BASE, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, PChar(Buffer), Length(Buffer), BytesReturned, nil) then
+   begin
+      SetLength(Buffer, BytesReturned);
+      Volume := PVOLUME_DISK_EXTENTS(PChar(Buffer));
+      //Log('Number of extents: ' + IntToStr(Volume.NumberOfDiskExtents));
+      for i := 0 to Volume.NumberOfDiskExtents - 1 do
+      begin
+         //Log(IntToStr(Volume.Extents[i].DiskNumber));
+         //Log(IntToStr(Volume.Extents[i].StartingOffset.QuadPart));
+         //Log(IntToStr(Volume.Extents[i].ExtentLength.QuadPart));
+         Device := '\Device\Harddisk' + IntToStr(Volume.Extents[i].DiskNumber) + '\Partition0';
+         Offset := Volume.Extents[i].StartingOffset.QuadPart;
+         Len    := Volume.Extents[i].ExtentLength.QuadPart;
+         Result := True;
+      end;
+   end
+   else
+   begin
+      //Log('Could not read disk extent');
+   end;
+end;
 
 initialization
    SetupComplete := False;

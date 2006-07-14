@@ -81,6 +81,9 @@ const
   FILE_DEVICE_MASS_STORAGE       = $0000002d;
 
   IOCTL_STORAGE_BASE = FILE_DEVICE_MASS_STORAGE;
+
+  IOCTL_VOLUME_BASE = 86; // 'V'
+  
 {//
 // Macro definition for defining IOCTL and FSCTL function control codes.  Note
 // that function codes 0-2047 are reserved for Microsoft Corporation, and
@@ -121,6 +124,7 @@ const
 // IoControlCode values for disk devices.
 //
 
+const IOCTL_DISK_BASE = FILE_DEVICE_DISK;
 {
 #define IOCTL_DISK_BASE                 FILE_DEVICE_DISK
 #define IOCTL_DISK_GET_DRIVE_GEOMETRY   CTL_CODE(IOCTL_DISK_BASE, 0x0000, METHOD_BUFFERED, FILE_ANY_ACCESS)
@@ -353,6 +357,15 @@ type
   end;
   PDRIVE_LAYOUT_INFORMATION = ^TDRIVE_LAYOUT_INFORMATION;
 
+
+
+  TDISK_GEOMETRY_EX = record
+    Geometry : TDISK_GEOMETRY ;                                 // Standard disk geometry: may be faked by driver.
+    DiskSize : LARGE_INTEGER ;                                 // Must always be correct
+    //BYTE  Data[1];                                                  // Partition, Detect info
+  end;
+  PDISK_GEOMETRY_EX = ^TDISK_GEOMETRY_EX;
+
 //
 // The following structure is passed in on an IOCTL_DISK_VERIFY request.
 // The offset and length parameters are both given in bytes.
@@ -566,11 +579,11 @@ typedef struct _BIN_RESULTS {
 #endif // _WINIOCTL_
 {$endif}
 
-
 function CtlCode(DeviceType : DWORD; Func : DWord; Method : DWord; Access : DWord) : DWORD;
 //#define CTL_CODE( DeviceType, Function, Method, Access ) (                 \
 //    ((DeviceType) << 16) | ((Access) << 14) | ((Function) << 2) | (Method) \
 
+//FSCTL_ALLOW_EXTENDED_DASD_IO    CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 32, METHOD_NEITHER,  FILE_ANY_ACCESS)
 
 function MediaDescription(Media : Integer) : String;
 

@@ -1,3 +1,13 @@
+0.4beta2
+========
+- --list shows disk and partition sizes
+- --size added
+
+0.4beta1
+========
+- --list shows correct syntax for drive letters
+- virtual devices added
+
 0.3 -> 0.4
 ==========
 - rrtool runs on Linux
