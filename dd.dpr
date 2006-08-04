@@ -32,6 +32,7 @@ var
    Progress    : Boolean;
    CheckSize   : Boolean;
    Unmounts    : TStringList;
+   DeviceFilter : String;
 
 {
     dd for windows
@@ -155,7 +156,79 @@ begin
    end;
 end;
 
-procedure PrintNT4BlockDevices;
+function FilterMatch(Device : String; Media : Integer; Filter : String) : Boolean;
+var
+   Base : String;
+begin
+   Result := false;
+
+   if Filter = 'fixed' then
+   begin
+      if Media = Media_Type_FixedMedia then
+      begin
+         Filter := 'disk';
+      end;
+   end
+   else if Filter = 'removable' then
+   begin
+      if Media <> Media_Type_FixedMedia then
+      begin
+         Filter := 'disk';
+      end;
+   end;
+
+   if Filter = 'disk' then
+   begin
+      if EndsWith(Device, 'Partition0', Base) then
+      begin
+         Result := True;
+      end;
+   end
+   else if Filter = 'partition' then
+   begin
+      if not EndsWith(Device, 'Partition0', Base) then
+      begin
+         Result := True;
+      end;
+   end;
+end;
+
+function CheckFilter(Device : String; Filter : String) : Boolean;
+var
+   h        : THandle;
+   Geometry : TDISK_GEOMETRY;
+   Len      : DWORD;
+   Value    : String;
+begin
+
+   if StartsWith(Device, '\\?\', Value) then
+   begin
+      // do a native open
+      Value := '\' + Value;
+      //Log('ntopen ' + Value);
+      h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+   end
+   else
+   begin
+      h := CreateFile(PChar(Device), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+   end;
+
+   Result := False;
+   if h <> INVALID_HANDLE_VALUE then
+   begin
+      try
+         // get the geometry...
+         if DeviceIoControl(h, CtlCode(FILE_DEVICE_DISK, 0, METHOD_BUFFERED, FILE_ANY_ACCESS), nil, 0, Pointer(@Geometry), Sizeof(Geometry), Len, nil) then
+         begin
+            Result := FilterMatch(Device, Geometry.MediaType, Filter);
+         end;
+      finally
+         CloseHandle(h);
+      end;
+   end;
+end;
+
+procedure PrintNT4BlockDevices(Filter : String);
 var
    Devices : TStringList;
    i : Integer;
@@ -194,10 +267,16 @@ var
                Description := MediaDescription(Geometry.MediaType) + '. Block size = ' + IntToStr(Geometry.BytesPerSector);
 //               Size.QuadPart := Geometry.Cylinders.QuadPart * Geometry.TracksPerCylinder * Geometry.SectorsPerTrack * Geometry.BytesPerSector;
 //               Log('size = ' + IntToStr(Size.QuadPart));
+
             end
             else
             begin
+               Geometry.MediaType := Media_Type_Unknown;
                //ShowError('reading geometry');
+            end;
+            if Filter <> '' then
+            begin
+               Result := FilterMatch(DeviceName, Geometry.MediaType, Filter);
             end;
             Size := GetSize(h);
          finally
@@ -222,7 +301,10 @@ var
          else if ErrorNo = ERROR_SHARING_VIOLATION then
          begin
             // in use (probably mounted)...
-            Result := True;
+            if Filter = '' then
+            begin
+               Result := True;
+            end;
          end
          else
          begin
@@ -330,13 +412,18 @@ begin
       Harddisks.Free;
    end;
 
-   Log('');
-   Log('Virtual devices');
-   Log('/dev/zero');
-   Log('/dev/random');
+   if Filter = '' then
+   begin
+      Log('');
+      Log('Virtual devices');
+      Log('/dev/zero');
+      Log('/dev/random');
+      Log('stdin');
+      //Log('stdout');
+   end;
 end;
 
-procedure PrintBlockDevices;
+procedure PrintBlockDevices(Filter : String);
 var
    h : THandle;
    VolumeName : String;
@@ -358,96 +445,99 @@ begin
    else
    begin
       try
-         Log('Win32 Available Volume Information');
-         LoadVolume;
-         MountPoints := TStringList.Create;
-         MountVolumes := TStringList.Create;
-         GetListOfMountPoints(MountPoints);
-         for i := 0 to MountPoints.Count - 1 do
+         if Filter = '' then
          begin
-            //Log('mp=' + MountPoints[i]);
-            SetLength(Buffer, 1024);
-            if JGetVolumeNameForVolumeMountPoint(PChar(MountPoints[i]), PChar(Buffer), Length(Buffer)) then
+            Log('Win32 Available Volume Information');
+            LoadVolume;
+            MountPoints := TStringList.Create;
+            MountVolumes := TStringList.Create;
+            GetListOfMountPoints(MountPoints);
+            for i := 0 to MountPoints.Count - 1 do
             begin
-               SetLength(Buffer, strlen(PChar(Buffer)));
-               MountVolumes.Add(Buffer);
-               //Log('   ' + Buffer);
-            end
-            else
-            begin
-               MountVolumes.Add('');
-            end;
-         end;
-
-         // volumes only work on 2k+
-         // for NT4 we need to search physicaldrive stuff.
-
-         for Drive := 'a' to 'z' do
-         begin
-            DriveString := Drive + ':\';
-
-            SetLength(Buffer, 1024);
-            if JGetVolumeNameForVolumeMountPoint(PChar(DriveString), PChar(Buffer), Length(Buffer)) then
-            begin
-               SetLength(Buffer, strlen(PChar(Buffer)));
-               if Length(Buffer) > 0 then
+               //Log('mp=' + MountPoints[i]);
+               SetLength(Buffer, 1024);
+               if JGetVolumeNameForVolumeMountPoint(PChar(MountPoints[i]), PChar(Buffer), Length(Buffer)) then
                begin
-   //               Buffer := Copy(Buffer, 12, Length(Buffer) - 13);
-                  VolumeLetter[Drive] := Buffer;
-   //               Log(DriveString + ' = ' + Buffer);
+                  SetLength(Buffer, strlen(PChar(Buffer)));
+                  MountVolumes.Add(Buffer);
+                  //Log('   ' + Buffer);
+               end
+               else
+               begin
+                  MountVolumes.Add('');
                end;
             end;
-         end;
 
+            // volumes only work on 2k+
+            // for NT4 we need to search physicaldrive stuff.
 
-
-         SetLength(VolumeName, 1024);
-         h := JFindFirstVolume(PChar(VolumeName), Length(VolumeName));
-         if h <> INVALID_HANDLE_VALUE then
-         begin
-            while True do
+            for Drive := 'a' to 'z' do
             begin
-               SetLength(VolumeName, strlen(PChar(VolumeName)));
-               Log('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
-               // see where this symlink points...
-               VolumeLink := NativeReadLink('\??\' + Copy(VolumeName, 5, Length(VolumeName) - 5));
-               if Length(VolumeLink) > 0 then
-               begin
-                  Log('  link to \\?' + VolumeLink);
-               end;
-               Log('  ' + GetDriveTypeDescription(GetDriveType(PChar(VolumeName))));
+               DriveString := Drive + ':\';
 
-               MountCount := 0;
-               // see if this matches a drive letter...
-               for Drive := 'a' to 'z' do
+               SetLength(Buffer, 1024);
+               if JGetVolumeNameForVolumeMountPoint(PChar(DriveString), PChar(Buffer), Length(Buffer)) then
                begin
-                  if VolumeLetter[Drive] = VolumeName then
+                  SetLength(Buffer, strlen(PChar(Buffer)));
+                  if Length(Buffer) > 0 then
                   begin
-                     Log('  Mounted on \\.\' + Drive + ':');
-                     MountCount := MountCount + 1;
+      //               Buffer := Copy(Buffer, 12, Length(Buffer) - 13);
+                     VolumeLetter[Drive] := Buffer;
+      //               Log(DriveString + ' = ' + Buffer);
                   end;
                end;
-               // see if this matches a mount point...
-               for i := 0 to MountPoints.Count - 1 do
-               begin
-                  if MountVolumes[i] = VolumeName then
-                  begin
-                     Log('  Mounted on ' + MountPoints[i]);
-                     MountCount := MountCount + 1;
-                  end;
-               end;
-
-               if MountCount = 0 then
-               begin
-                  Log('  Not mounted');
-               end;
-
-               Log('');
-
-               SetLength(VolumeName, 1024);
-               if not JFindNextVolume(h, PChar(VolumeName), Length(VolumeName)) then break;
             end;
-            JFindVolumeClose(h);
+
+
+
+            SetLength(VolumeName, 1024);
+            h := JFindFirstVolume(PChar(VolumeName), Length(VolumeName));
+            if h <> INVALID_HANDLE_VALUE then
+            begin
+               while True do
+               begin
+                  SetLength(VolumeName, strlen(PChar(VolumeName)));
+                  Log('\\.\' + Copy(VolumeName, 5, Length(VolumeName)));
+                  // see where this symlink points...
+                  VolumeLink := NativeReadLink('\??\' + Copy(VolumeName, 5, Length(VolumeName) - 5));
+                  if Length(VolumeLink) > 0 then
+                  begin
+                     Log('  link to \\?' + VolumeLink);
+                  end;
+                  Log('  ' + GetDriveTypeDescription(GetDriveType(PChar(VolumeName))));
+
+                  MountCount := 0;
+                  // see if this matches a drive letter...
+                  for Drive := 'a' to 'z' do
+                  begin
+                     if VolumeLetter[Drive] = VolumeName then
+                     begin
+                        Log('  Mounted on \\.\' + Drive + ':');
+                        MountCount := MountCount + 1;
+                     end;
+                  end;
+                  // see if this matches a mount point...
+                  for i := 0 to MountPoints.Count - 1 do
+                  begin
+                     if MountVolumes[i] = VolumeName then
+                     begin
+                        Log('  Mounted on ' + MountPoints[i]);
+                        MountCount := MountCount + 1;
+                     end;
+                  end;
+
+                  if MountCount = 0 then
+                  begin
+                     Log('  Not mounted');
+                  end;
+
+                  Log('');
+
+                  SetLength(VolumeName, 1024);
+                  if not JFindNextVolume(h, PChar(VolumeName), Length(VolumeName)) then break;
+               end;
+               JFindVolumeClose(h);
+            end;
          end;
       except
          on E : Exception do
@@ -457,7 +547,7 @@ begin
       end;
       Log('');
       Log('NT Block Device Objects');
-      PrintNT4BlockDevices;
+      PrintNT4BlockDevices(Filter);
    end;
 
 end;
@@ -534,11 +624,27 @@ var
    i : Integer;
    Value : String;
    ProgressCallback : TDDProgress;
+   ExeName : String;
+   Parameters : TStringList;
 begin
    UseWriteln;
    Log('rawwrite dd for windows version ' + AppVersion + '.');
    Log('Written by John Newbigin <jn@it.swin.edu.au>');
    Log('This program is covered by the GPL.  See copying.txt for details');
+
+   Parameters := TStringList.Create;
+
+   ExeName := LowerCase(ExtractFileName(ParamStr(0)));
+   if StartsWith(ExeName, 'dd-', Value) then
+   begin
+      if EndsWith(Value, '.exe', Value) then
+      begin
+         //Log('Filter is ' + Value);
+         Parameters.Add('--filter=' + Value);
+      end;
+      // we must have a default filter
+
+   end;
    
    SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -574,12 +680,19 @@ begin
    // check the command line parameters
    Action    := 'dd';
    Count     := -1;
-   BlockSize := 512; // ?
+   BlockSize := 512;
    Seek      := 0;
    Skip      := 0;
    Progress  := False;
    CheckSize := False;
    Unmounts  := TStringList.Create;
+
+
+   for i := 1 to ParamCount do
+   begin
+      Parameters.Add(ParamStr(i));
+   end;
+
    // count=
    // if=
    // of=
@@ -587,53 +700,76 @@ begin
    // skip=
    // bs=
    // --list
-   for i := 1 to ParamCount do
+   for i := 0 to Parameters.Count - 1 do
    begin
-      //Log(ParamStr(i));
-      if ParamStr(i) = '--list' then
+      if Parameters[i] = '--list' then
       begin
          Action := 'list';
       end
-      else if ParamStr(i) = '--progress' then
+      else if Parameters[i] = '--progress' then
       begin
          Progress := True;
       end
-      else if ParamStr(i) = '--size' then
+      else if Parameters[i] = '--size' then
       begin
          CheckSize := True;
       end
-      else if StartsWith(ParamStr(i), 'count=', Value) then
+      else if StartsWith(Parameters[i], 'count=', Value) then
       begin
          Count := StrToInt64(Value);
       end
-      else if StartsWith(ParamStr(i), 'if=', Value) then
+      else if StartsWith(Parameters[i], 'if=', Value) then
       begin
          InFile := Value;
       end
-      else if StartsWith(ParamStr(i), 'of=', Value) then
+      else if StartsWith(Parameters[i], 'of=', Value) then
       begin
          OutFile := Value;
       end
-      else if StartsWith(ParamStr(i), 'seek=', Value) then
+      else if StartsWith(Parameters[i], 'seek=', Value) then
       begin
          Seek := StrToInt64(Value);
       end
-      else if StartsWith(ParamStr(i), 'skip=', Value) then
+      else if StartsWith(Parameters[i], 'skip=', Value) then
       begin
          Skip := StrToInt64(Value);
       end
-      else if StartsWith(ParamStr(i), 'bs=', Value) then
+      else if StartsWith(Parameters[i], 'bs=', Value) then
       begin
          BlockSize := GetBlockSize(Value);
       end
-      else if StartsWith(ParamStr(i), '--unmount=', Value) then
+      else if StartsWith(Parameters[i], '--filter=', Value) then
+      begin
+         if Value = 'removable' then
+         begin
+            DeviceFilter := Value;
+         end
+         else if Value = 'fixed' then
+         begin
+            DeviceFilter := Value;
+         end
+         else if Value = 'disk' then
+         begin
+            DeviceFilter := Value;
+         end
+         else if Value = 'partition' then
+         begin
+            DeviceFilter := Value;
+         end
+         else
+         begin
+            Log('Invalid filter');
+            Action := 'usage';
+         end;
+      end
+      else if StartsWith(Parameters[i], '--unmount=', Value) then
       begin
          // Not ready yet...
          //Unmounts.Add(Value);
       end
       else
       begin
-         Log('Unknown command ' +  ParamStr(i));
+         Log('Unknown command ' +  Parameters[i]);
          Action := 'usage';
       end;
    end;
@@ -666,10 +802,20 @@ begin
    end
    else if Action = 'list' then
    begin
-      PrintBlockDevices;
+      PrintBlockDevices(DeviceFilter);
    end
    else if Action = 'dd' then
    begin
+      if DeviceFilter <> '' then
+      begin
+         // filter the output file...
+         if not CheckFilter(OutFile, DeviceFilter) then
+         begin
+            Log('Output file does not match device filter ' + DeviceFilter);
+            Log('dd will not continue');
+            BlockSize := 0; // trigger dd to not run
+         end;
+      end;
       Count := Count;
       Skip  := Skip * BlockSize;
       Seek  := Seek * Blocksize;

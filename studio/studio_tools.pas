@@ -12,7 +12,7 @@ uses windows, classes;
 uses classes;
 {$ENDIF}
 
-const AppVersion = '0.4beta1';
+const AppVersion = '0.4beta4';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
@@ -373,6 +373,7 @@ var
 
    MagicZero   : Boolean;
    MagicRandom : Boolean;
+   StdOut      : Boolean;
 
    In95Disk : T95Disk;
    Out95Disk : T95Disk;
@@ -412,8 +413,9 @@ begin
    Out95Disk  := nil;
    Out95SectorCount := 0;
 
-   MagicZero := False;
+   MagicZero   := False;
    MagicRandom := False;
+   StdOut      := False;
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
@@ -425,6 +427,19 @@ begin
       begin
          MagicRandom := True;
          randomize_MT19937;
+      end
+      else if InFile = 'stdin' then
+      begin
+         h := GetStdHandle(STD_INPUT_HANDLE);
+         if h <> INVALID_HANDLE_VALUE then
+         begin
+            InBinFile.AssignHandle(h);
+         end
+         else
+         begin
+            ShowError('native opening standard input');
+            exit;
+         end;
       end
       else if StartsWith(InFile, '\\:\', Value) then
       begin

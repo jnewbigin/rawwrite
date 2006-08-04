@@ -1,3 +1,17 @@
+0.4beta4
+========
+- Implemented if=stdin
+- added --filter=<filter> to limit the types of devices which can be written to
+  <filter> can be one of:
+    fixed	Only write to a fixed disk
+    removable	Only write to a removable disk
+    disk	Only write to any kind of disk
+    partition	Only write to a partition
+
+    These filters may change in the future.
+- set default filter by renaming to dd-<filter>.exe (eg. dd-removable.exe can only write to removable disks)
+    
+
 0.4beta2
 ========
 - --list shows disk and partition sizes
