@@ -415,11 +415,13 @@ begin
    if Filter = '' then
    begin
       Log('');
-      Log('Virtual devices');
-      Log('/dev/zero');
-      Log('/dev/random');
-      Log('stdin');
-      //Log('stdout');
+      Log('Virtual input devices');
+      Log(' /dev/zero   (null data)');
+      Log(' /dev/random (pseudo-random data)');
+      Log(' -           (standard input)');
+      Log('');
+      Log('Virtual output devices');
+      Log(' -           (standard output)');
    end;
 end;
 
@@ -627,7 +629,8 @@ var
    ExeName : String;
    Parameters : TStringList;
 begin
-   UseWriteln;
+   //UseWriteln;
+   UseStdError;
    Log('rawwrite dd for windows version ' + AppVersion + '.');
    Log('Written by John Newbigin <jn@it.swin.edu.au>');
    Log('This program is covered by the GPL.  See copying.txt for details');
@@ -842,5 +845,10 @@ begin
    else
    begin
       Log('Unknown action ' + Action);
+   end;
+   if IsDebuggerPresent then
+   begin
+      Log('Press enter to close');
+      readln;
    end;
 end.

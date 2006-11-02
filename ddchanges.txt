@@ -1,3 +1,14 @@
+0.4beta6
+========
+- Implemented of=- for stdout
+- Renamed if=- for stdin
+- Messages are now printed to stderr
+
+0.4beta5
+========
+- If a partial block write fails, the buffer is padded to the end of the block and the write is attempted again.
+  This allows disk images which are not an exact multiple of the block size to be written to disk.
+
 0.4beta4
 ========
 - Implemented if=stdin

@@ -12,7 +12,7 @@ uses windows, classes;
 uses classes;
 {$ENDIF}
 
-const AppVersion = '0.4beta4';
+const AppVersion = '0.4beta6';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
@@ -428,7 +428,7 @@ begin
          MagicRandom := True;
          randomize_MT19937;
       end
-      else if InFile = 'stdin' then
+      else if InFile = '-' then
       begin
          h := GetStdHandle(STD_INPUT_HANDLE);
          if h <> INVALID_HANDLE_VALUE then
@@ -506,7 +506,20 @@ begin
          begin
             OutBinFile := TBinaryFile.Create;
 
-            if StartsWith(OutFile, '\\?\', Value) then
+            if OutFile = '-' then
+            begin
+               h := GetStdHandle(STD_OUTPUT_HANDLE);
+               if h <> INVALID_HANDLE_VALUE then
+               begin
+                  OutBinFile.AssignHandle(h);
+               end
+               else
+               begin
+                  ShowError('native opening standard output');
+                  exit;
+               end;
+            end
+            else if StartsWith(OutFile, '\\?\', Value) then
             begin
          //      Log('Native write NYI');
                // do a native open
@@ -612,6 +625,20 @@ begin
             if assigned(OutBinFile) then
             begin
                Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
+               if (Actual2 = 0) and (Actual <> BlockSize) then
+               begin
+                  if Windows.GetLastError = 87 then
+                  begin
+                     // non aligned writes don't work on block devices...
+                     // round up and try again
+                     FillMemory(PChar(Buffer) + Actual, BlockSize - Actual, 0);
+                     Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), BlockSize);
+                     if Actual2 = BlockSize then
+                     begin
+                        Actual2 := Actual;
+                     end;
+                  end;
+               end;
             end
             else if assigned(Out95Disk) then
             begin
