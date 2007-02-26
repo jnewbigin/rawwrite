@@ -96,7 +96,7 @@ end;
 procedure PrintUsage;
 begin
    Log('dd [bs=SIZE] [count=BLOCKS] [if=FILE] [of=FILE] [seek=BLOCKS] [skip=BLOCKS] [--size] [--list] [--progress]');
-   Log('SIZE may have one of the following suffix:');
+   Log('SIZE and BLOCKS may have one of the following suffix:');
    Log(' k = 1024');
    Log(' M = 1048576');
    Log(' G = 1073741824');
@@ -689,6 +689,8 @@ begin
    Progress  := False;
    CheckSize := False;
    Unmounts  := TStringList.Create;
+   InFile    := '-';
+   OutFile   := '-';
 
 
    for i := 1 to ParamCount do
@@ -719,7 +721,7 @@ begin
       end
       else if StartsWith(Parameters[i], 'count=', Value) then
       begin
-         Count := StrToInt64(Value);
+         Count := GetBlockSize(Value);
       end
       else if StartsWith(Parameters[i], 'if=', Value) then
       begin
@@ -731,11 +733,11 @@ begin
       end
       else if StartsWith(Parameters[i], 'seek=', Value) then
       begin
-         Seek := StrToInt64(Value);
+         Seek := GetBlockSize(Value);
       end
       else if StartsWith(Parameters[i], 'skip=', Value) then
       begin
-         Skip := StrToInt64(Value);
+         Skip := GetBlockSize(Value);
       end
       else if StartsWith(Parameters[i], 'bs=', Value) then
       begin
@@ -769,6 +771,10 @@ begin
       begin
          // Not ready yet...
          //Unmounts.Add(Value);
+      end
+      else if (Parameters[i] = '--help') or (Parameters[i] = '-h') then
+      begin
+         Action := 'usage';
       end
       else
       begin

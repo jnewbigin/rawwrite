@@ -1,3 +1,8 @@
+0.5
+===
+- count, seek and skip can now use a multiplicative suffix like bs
+- stdin and stdout are now the defaults
+
 0.4beta6
 ========
 - Implemented of=- for stdout
@@ -46,13 +51,6 @@
   output)
 - Stupid bug where native devices were always read only
 - addedd progress indicator
-
-
-
-wishlist
-========
-Measure max device size to prevent access beond end of device.
-
 
 
 WTF is the deal with all the device names?

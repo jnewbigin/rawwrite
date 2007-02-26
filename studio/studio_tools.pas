@@ -12,7 +12,7 @@ uses windows, classes;
 uses classes;
 {$ENDIF}
 
-const AppVersion = '0.4beta6';
+const AppVersion = '0.5';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
