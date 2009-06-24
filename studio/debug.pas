@@ -4,7 +4,7 @@ unit debug;
 {$MODE Delphi}
 {$ENDIF}
 
-// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/studio/debug.pas,v 1.2 2005/12/05 08:26:02 jnewbigin Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/studio/debug.pas,v 1.3 2006/11/02 23:52:32 jnewbigin Exp $
 
 interface
 
@@ -15,6 +15,8 @@ type DebugEvent = procedure (S : String) of object;
 procedure SetDebug(d : DebugEvent);
 procedure UseWriteln;
 procedure UseStdError;
+procedure HexDump(P : PChar; Length : Integer);
+
 
 
 type TWriteLine = class
@@ -27,15 +29,18 @@ private
    h : THandle;
 public
    constructor Create;
+   procedure Write(S : String);
    procedure WriteLine(S : String);
 end;
 
 function IsDebuggerPresent : Boolean;
 
+var
+   stderr : TStdError;
 
 implementation
 
-uses winioctl;
+uses winioctl, sysutils;
 
 var
    fOnDebug : DebugEvent;
@@ -69,6 +74,13 @@ begin
    h := GetStdHandle(STD_ERROR_HANDLE);
 end;
 
+procedure TStdError.Write(S : String);
+var
+   Done : DWORD;
+begin
+   WriteFile2(h, PChar(S), Length(S), done, nil);
+end;
+
 procedure TStdError.WriteLine(S : String);
 var
    Done : DWORD;
@@ -86,11 +98,9 @@ begin
 end;
 
 procedure UseStdError;
-var
-   se : TStdError;
 begin
-   se := TStdError.Create;
-   SetDebug(se.WriteLine);
+   stderr := TStdError.Create;
+   SetDebug(stderr.WriteLine);
 end;
 
 function IsDebuggerPresent : Boolean;
@@ -131,6 +141,36 @@ begin
    end;
 
 end;
+
+procedure HexDump(P : PChar; Length : Integer);
+var
+
+   S  : String;
+   S2 : String;
+   i  : Integer;
+begin
+   S := '0000 ';
+   for i := 0 to Length - 1 do
+   begin
+      S := S + IntToHex(Ord(P[i]), 2);
+      if not (ord(P[i]) in [0, 7, 8, 9, 10, 13]) then
+      begin
+         S2 := S2 + P[i];
+      end
+      else
+      begin
+         S2 := S2 + ' ';
+      end;
+      S := S + ' ';
+      if System.Length(S) >= 52 then
+      begin
+         Log(S + ' ' + S2);
+         S := IntToHex(i + 1, 4) + ' ';
+         s2 := '';
+      end;
+   end;
+end;
+
 
 
 end.
