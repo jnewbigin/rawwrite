@@ -12,7 +12,7 @@ uses windows, classes;
 uses classes;
 {$ENDIF}
 
-const AppVersion = '0.5';
+const AppVersion = '0.6beta3';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
@@ -374,6 +374,7 @@ var
    MagicZero   : Boolean;
    MagicRandom : Boolean;
    StdOut      : Boolean;
+   MagicNull   : Boolean;
 
    In95Disk : T95Disk;
    Out95Disk : T95Disk;
@@ -392,6 +393,8 @@ var
    FullBlocksOut : Int64;
    HalfBlocksOut : Int64;
    BytesOut : Int64;
+
+   StdinSkip : Int64;
 begin
 //   Log('InFile    = ' + InFile);
 //   Log('OutFile   = ' + OutFile);
@@ -416,6 +419,7 @@ begin
    MagicZero   := False;
    MagicRandom := False;
    StdOut      := False;
+   MagicNull   := False;
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
@@ -489,8 +493,25 @@ begin
       // skip over the required amount of input
       if Skip > 0 then
       begin
-         InBinFile.Seek(Skip);
-         //Log('skip to ' + IntToStr(InBinFile.GetPos));
+         if InFile = '-' then
+         begin
+            // can't seek on stdin, we will just read it...
+            StdinSkip := Skip;
+            while StdinSkip > 0 do
+            begin
+               SetLength(Buffer, BlockSize);
+
+               Actual := InBinFile.BlockRead2(PChar(Buffer), BlockSize);
+               // error checking?
+               StdinSkip := StdinSkip - BlockSize;
+            end;
+
+         end
+         else
+         begin
+            InBinFile.Seek(Skip);
+            Log('skip to ' + IntToStr(InBinFile.GetPos));
+         end;
       end;
 
       // open the output file
@@ -506,7 +527,11 @@ begin
          begin
             OutBinFile := TBinaryFile.Create;
 
-            if OutFile = '-' then
+            if OutFile = '/dev/null' then
+            begin
+               MagicNull := True;
+            end
+            else if OutFile = '-' then
             begin
                h := GetStdHandle(STD_OUTPUT_HANDLE);
                if h <> INVALID_HANDLE_VALUE then
@@ -558,7 +583,10 @@ begin
          begin
             if Assigned(OutBinFile) then
             begin
-               OutBinFile.Seek(Seek);
+               if not MagicNull then
+               begin
+                  OutBinFile.Seek(Seek);
+               end;
             end
             else if Assigned(Out95Disk) then
             begin
@@ -615,7 +643,14 @@ begin
             begin
                if Windows.GetLastError > 0 then
                begin
-                  ShowError('reading file');
+                  if Windows.GetLastError = 109 then
+                  begin
+                     // End of pipe
+                  end
+                  else
+                  begin
+                     ShowError('reading file');
+                  end;
                end;
                break;
             end;
@@ -624,18 +659,25 @@ begin
             //Log('Writing block ' + IntToStr(i) + ' len = ' + IntToStr(Actual));
             if assigned(OutBinFile) then
             begin
-               Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
-               if (Actual2 = 0) and (Actual <> BlockSize) then
+               if MagicNull then
                begin
-                  if Windows.GetLastError = 87 then
+                  Actual2 := Actual;
+               end
+               else
+               begin
+                  Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), Actual);
+                  if (Actual2 = 0) and (Actual <> BlockSize) then
                   begin
-                     // non aligned writes don't work on block devices...
-                     // round up and try again
-                     FillMemory(PChar(Buffer) + Actual, BlockSize - Actual, 0);
-                     Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), BlockSize);
-                     if Actual2 = BlockSize then
+                     if Windows.GetLastError = 87 then
                      begin
-                        Actual2 := Actual;
+                        // non aligned writes don't work on block devices...
+                        // round up and try again
+                        FillMemory(PChar(Buffer) + Actual, BlockSize - Actual, 0);
+                        Actual2 := OutBinFile.BlockWrite2(PChar(Buffer), BlockSize);
+                        if Actual2 = BlockSize then
+                        begin
+                           Actual2 := Actual;
+                        end;
                      end;
                   end;
                end;
