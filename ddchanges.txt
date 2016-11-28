@@ -1,6 +1,10 @@
 TODO: notrunc feature
-      errorlevel exit code
-      
+
+0.6beta3
+========
+- add errorlevel exit code
+- progress is written to stderr
+
 0.6beta2
 ========
 - Implemented of=/dev/null which will just throw away the data

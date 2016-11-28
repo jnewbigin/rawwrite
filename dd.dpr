@@ -6,6 +6,7 @@ uses
   SysUtils,
   Windows,
   Classes,
+  Filectrl,
   Native in 'Native.pas',
   volume in 'volume.pas',
   WinBinFile in 'WinBinFile.pas',
@@ -29,10 +30,14 @@ var
    Seek        : Int64;
    Skip        : Int64;
    BlockSize   : Int64;
+   BlockUnit   : String;
    Progress    : Boolean;
    CheckSize   : Boolean;
    Unmounts    : TStringList;
    DeviceFilter : String;
+
+   idod_BlockSize : String;
+   idod_size : Boolean;
 
 {
     dd for windows
@@ -53,21 +58,26 @@ var
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 }
 
+function GetBlockSize(S : String) : Int64; forward;
+
 type TDDProgress = class
 public
    BlockSize : Int64;
    Count     : Int64;
+   BlockUnit : String;
+   BlockFactor : Int64;
+   procedure SetUnit(BlockUnit : String);
    function DDProgress(Progress : Int64; Error : DWORD) : Boolean;
 end;
 
 function TDDProgress.DDProgress(Progress : Int64; Error : DWORD) : Boolean;
 var
-   Number : String;
-   S : String;
-   Len : Integer;
-   i : Integer;
-   PerCent : Integer;
-   P : String;
+   Number   : String;
+   S        : String;
+   Len      : Integer;
+   i        : Integer;
+   PerCent  : Integer;
+   P        : String;
 begin
    Result := False;
    if Count > 0 then
@@ -78,6 +88,7 @@ begin
    end;
 //   else
    begin
+      Progress := Progress div BlockFactor;
       Number := IntToStr(Progress);
       Len := Length(Number);
       for i := 1 to Len do
@@ -89,8 +100,16 @@ begin
          end;
       end;
 
-      write(#13 + S + P);
+      S := S + BlockUnit;
+
+      write(#13 + S + P + ' ');
    end;
+end;
+
+procedure TDDProgress.SetUnit(BlockUnit : String);
+begin
+   self.BlockUnit := BlockUnit;
+   BlockFactor := GetBlockSize('1' + BlockUnit);
 end;
 
 procedure PrintUsage;
@@ -199,7 +218,27 @@ var
    Geometry : TDISK_GEOMETRY;
    Len      : DWORD;
    Value    : String;
+
+   Path     : String;
 begin
+
+// what about file... Make sure the path exists?
+   if Filter = 'file' then
+   begin
+      Path := ExpandFileName(Device);
+      Path := ExtractFilePath(Path);
+
+      if DirectoryExists(Path) then
+      begin
+         //Log('Output path is ' + path);
+         Result := True;
+         exit;
+      end
+      else
+      begin
+         Log('Output path ' + Path + ' does not exist');
+      end;
+   end;
 
    if StartsWith(Device, '\\?\', Value) then
    begin
@@ -422,6 +461,7 @@ begin
       Log('');
       Log('Virtual output devices');
       Log(' -           (standard output)');
+      Log(' /dev/null   (discard the data)');
    end;
 end;
 
@@ -585,7 +625,7 @@ begin
       end;
    end;
    //Log(' n = ' + S);
-   Result := StrToInt64(S);
+   Result := StrToInt64Def(S, 0);
    //Log(' s = ' + Suffix);
    if (Suffix = 'c') or (Suffix = '') then
    begin
@@ -622,6 +662,174 @@ begin
    end
 end;
 
+function GetBlockSuffix(S : String) : String;
+var
+   Suffix : String;
+begin
+   while Length(S) > 0 do
+   begin
+      if S[Length(S)] in ['a'..'z', 'A'..'Z'] then
+      begin
+         Suffix := S[Length(S)] + Suffix;
+         S := Copy(S, 1, Length(S) - 1);
+      end
+      else
+      begin
+         break;
+      end;
+   end;
+   Result := Suffix;
+end;
+
+function VerifyDiskContaining(Drive : String) : String;
+var
+   DriveString : String;
+   Buffer      : String;
+   DeviceName  : String;
+   VolumeLink  : String;
+   Id          : String;
+   Devices     : TStringList;
+   HardDisks   : TStringList;
+   i           : Integer;
+   DriveNo     : Integer;
+   PartNo      : Integer;
+   DeviceName2 : String;
+   WantedDisk  : Integer;
+begin
+   LoadVolume;
+   Result := '';
+
+   // step 1, make a list of drive letters -> devices
+   // if the requested drive only has one segement after \\?\device\ then we can just use that
+   DriveString := Drive + '\';
+
+   SetLength(Buffer, 1024);
+   if JGetVolumeNameForVolumeMountPoint(PChar(DriveString), PChar(Buffer), Length(Buffer)) then
+   begin
+      SetLength(Buffer, strlen(PChar(Buffer)));
+      if Length(Buffer) > 0 then
+      begin
+         DeviceName := Buffer;
+      end;
+   end;
+
+   if Length(DeviceName) > 0 then
+   begin
+      VolumeLink := NativeReadLink('\??\' + Copy(DeviceName, 5, Length(DeviceName) - 5));
+   end;
+
+   if Length(VolumeLink) > 0 then
+   begin
+      DeviceName := '\\?' + VolumeLink;
+      Log('Device ' + Drive + ' is a link to ' + DeviceName);
+   end
+   else
+   begin
+      Log('Device ' + Drive + ' could not be found');
+      exit;
+   end;
+
+   if StartsWith(DeviceName, '\\?\Device\Floppy', Id) then
+   begin
+      idod_BlockSize := '18k'; // good 'round' number for 1.44Meg floppy
+      idod_Size := False;
+      Result := DeviceName;
+      exit;
+   end
+   else if StartsWith(DeviceName, '\\?\Device\CdRom', Id) then
+   begin
+      idod_BlockSize := '2k';
+      idod_Size := False;
+      Result := DeviceName;
+      exit;
+   end;
+
+
+   // else step 2, make sure that there is only one partition on that device
+   // if there is only one, returun the device (partition0)
+
+   // we must do an NT4 scan of hard disks to find what links to the same object
+   Devices := TStringList.Create;
+   Devices.Sorted := True;
+   Harddisks := TStringList.Create;
+   Harddisks.Sorted := True;
+
+   try
+      NativeDir('\Device', Devices);
+
+      for i := 0 to Devices.Count - 1 do
+      begin
+         if StartsWith(Devices[i], 'Harddisk', Id) then
+         begin
+            DriveNo := StrToIntDef(Id, -1);
+            if DriveNo >= 0 then
+            begin
+               // scan the partitions...
+               HardDisks.AddObject('\Device\Harddisk' + IntToStr(DriveNo), TObject(0));
+            end;
+         end;
+      end;
+
+      WantedDisk := -1;
+
+      for DriveNo := 0 to Harddisks.Count - 1 do
+      begin
+         Devices.Clear;
+         NativeDir(Harddisks[DriveNo], Devices);
+         for i := 0 to Devices.Count - 1 do
+         begin
+            if StartsWith(Devices[i], 'Partition', Id) then
+            begin
+               PartNo := StrToIntDef(Id, -1);
+               if PartNo >= 0 then
+               begin
+                  DeviceName2 := Harddisks[DriveNo] + '\Partition' + IntToStr(PartNo);
+                  //Log('*' + DeviceName2);
+                  HardDisks.Objects[DriveNo] := TObject(Integer(HardDisks.Objects[DriveNo]) + 1);
+
+
+                  VolumeLink := '\\?' + NativeReadLink(DeviceName2);
+                  DeviceName2 := '\\?' + DeviceName2;
+
+                  if DeviceName = VolumeLink then
+                  begin
+                     Log(DeviceName + ' is a partition on ' + Harddisks[DriveNo]);
+
+                     WantedDisk := DriveNo;
+                  end;
+               end;
+            end
+         end;
+      end;
+
+      if WantedDisk >= 0 then
+      begin
+         if Integer(HardDisks.Objects[WantedDisk]) = 2 then
+         begin
+            Result := '\\?' + Harddisks[WantedDisk] + '\Partition0';
+            idod_BlockSize := '1M';
+            idod_Size := True;
+            exit;
+         end
+         else
+         begin
+            Log('Multiple partitions were found on ' + Harddisks[WantedDisk] + '.');
+            Log('Use ''if=\\?' + Harddisks[WantedDisk] + '\Partition0'' instead');
+         end;
+      end
+      else
+      begin
+         Log('No match could be found for ' + Drive);
+      end;
+
+   finally
+      HardDisks.Free;
+      Devices.Free;
+   end;
+
+   Log('');
+end;
+
 var
    i : Integer;
    Value : String;
@@ -633,7 +841,8 @@ begin
    UseStdError;
    Log('rawwrite dd for windows version ' + AppVersion + '.');
    Log('Written by John Newbigin <jn@it.swin.edu.au>');
-   Log('This program is covered by the GPL.  See copying.txt for details');
+   Log('This program is covered by terms of the GPL Version 2.');
+   Log('');
 
    Parameters := TStringList.Create;
 
@@ -684,6 +893,7 @@ begin
    Action    := 'dd';
    Count     := -1;
    BlockSize := 512;
+   BlockUnit := '';
    Seek      := 0;
    Skip      := 0;
    Progress  := False;
@@ -731,6 +941,21 @@ begin
       begin
          OutFile := Value;
       end
+      else if StartsWith(Parameters[i], 'id=', Value) then
+      begin
+         InFile := VerifyDiskContaining(Value);
+         BlockSize := GetBlockSize(idod_BlockSize);
+         BlockUnit := GetBlockSuffix(idod_BlockSize);
+         Progress := True;
+         CheckSize := idod_size;
+      end
+      else if StartsWith(Parameters[i], 'od=', Value) then
+      begin
+         OutFile := VerifyDiskContaining(Value);
+         BlockSize := GetBlockSize(idod_BlockSize);
+         BlockUnit := GetBlockSuffix(idod_BlockSize);
+         Progress := True;
+      end
       else if StartsWith(Parameters[i], 'seek=', Value) then
       begin
          Seek := GetBlockSize(Value);
@@ -742,6 +967,7 @@ begin
       else if StartsWith(Parameters[i], 'bs=', Value) then
       begin
          BlockSize := GetBlockSize(Value);
+         BlockUnit := GetBlockSuffix(Value);
       end
       else if StartsWith(Parameters[i], '--filter=', Value) then
       begin
@@ -758,6 +984,10 @@ begin
             DeviceFilter := Value;
          end
          else if Value = 'partition' then
+         begin
+            DeviceFilter := Value;
+         end
+         else if Value = 'file' then
          begin
             DeviceFilter := Value;
          end
@@ -820,7 +1050,7 @@ begin
          // filter the output file...
          if not CheckFilter(OutFile, DeviceFilter) then
          begin
-            Log('Output file does not match device filter ' + DeviceFilter);
+            Log('Output file does not match device filter ''' + DeviceFilter + '''');
             Log('dd will not continue');
             BlockSize := 0; // trigger dd to not run
          end;
@@ -835,6 +1065,7 @@ begin
             ProgressCallback := TDDProgress.Create;
             ProgressCallback.BlockSize := BlockSize;
             ProgressCallback.Count := Count;
+            ProgressCallback.SetUnit(BlockUnit);
             DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, ProgressCallback.DDProgress);
             ProgressCallback.Free;
          end
@@ -842,6 +1073,10 @@ begin
          begin
             DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, nil);
          end;
+      end
+      else
+      begin
+         Log('Invalid block size');
       end;
    end
    else if Action = 'unmount' then
