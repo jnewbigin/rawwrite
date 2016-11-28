@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, BlockDev, AutoUpdate;
+  StdCtrls, ComCtrls, ExtCtrls, BlockDev;
 
 const
    DebugHigh = 0;
@@ -50,8 +50,7 @@ type
     Label6: TLabel;
     Label13: TLabel;
     Label14: TLabel;
-    Button6: TButton;
-    AutoUpdate1: TAutoUpdate;
+    Version: TLabel;
     procedure BrowseWriteButtonClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure DriveComboBoxDrawItem(Control: TWinControl; Index: Integer;
@@ -64,7 +63,6 @@ type
     procedure ReadButtonClick(Sender: TObject);
     procedure TabSheet3Show(Sender: TObject);
     procedure TabSheet5Show(Sender: TObject);
-    procedure Button6Click(Sender: TObject);
     procedure FileNameEditKeyPress(Sender: TObject; var Key: Char);
     procedure FormShow(Sender: TObject);
   private
@@ -139,10 +137,10 @@ begin
    // Prevent error messages being displayed by NT
    SetErrorMode(SEM_FAILCRITICALERRORS);
 
-   if AUTOUPDATE_VERSION < 102 then
+{   if AUTOUPDATE_VERSION < 102 then
    begin
       ShowMessage('AUTOUPDATE_VERSION is too old');
-   end;
+   end;}
 
    // what OS
    Version.dwOSVersionInfoSize := Sizeof(Version);
@@ -186,10 +184,11 @@ begin
    begin
       if not FileExists('diskio.dll') then
       begin
-         if MessageDlg('You seem to be missing diskio.dll.  RawWrite can automaticly download it for you.  Do you want to download it now?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+{         if MessageDlg('You seem to be missing diskio.dll.  RawWrite can automaticly download it for you.  Do you want to download it now?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
          begin
             AutoUpdate1.GetFile('diskio.dll');
-         end;
+         end;}
+         ShowMessage('You seem to be missing diskio.dll.');
       end;
    end;
 
@@ -668,7 +667,7 @@ end;
 procedure TMainForm.TabSheet3Show(Sender: TObject);
 begin
    Memo1.Text :=
-'RawWrite for windows version ' + AutoUpdate1.Version + #13#10+
+'RawWrite for windows version ' + Version.Caption + #13#10+
 'Written by John Newbigin'#13#10+
 'Copyright (C) 2000 John Newbigin'#13#10+
 ''#13#10+
@@ -733,11 +732,6 @@ begin
 'listed'#13#10+
 '';
 
-end;
-
-procedure TMainForm.Button6Click(Sender: TObject);
-begin
-   AutoUpdate1.CheckForUpgrade(True);
 end;
 
 procedure TMainForm.FileNameEditKeyPress(Sender: TObject; var Key: Char);

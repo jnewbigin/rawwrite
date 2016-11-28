@@ -24,7 +24,7 @@ function SaveDiskResource(ExeName : String; Name : TStringList; Data : TStringLi
 procedure CreateExe(FileName : String; Stub : String);
 procedure ShowError(Action : String);
 function GetSize(h : THandle) : Int64;
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; StopType : Boolean; Callback : ProgressEvent);
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; NoTruncateOut : Boolean; StopType : Boolean; Callback : ProgressEvent);
 function StartsWith(S : String; Start : String; var Value : String) : Boolean;
 function EndsWith(S : String; Ends : String; var Value : String) : Boolean;
 function GetDriveStrings(StringList : TStringList) : Boolean;
@@ -362,7 +362,7 @@ begin
    end;
 end;
 
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; StopType : Boolean; Callback : ProgressEvent);
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; NoTruncateOut : Boolean; StopType : Boolean; Callback : ProgressEvent);
 var
    InBinFile   : TBinaryFile;
    OutBinFile  : TBinaryFile;

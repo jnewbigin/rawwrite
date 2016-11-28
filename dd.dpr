@@ -18,23 +18,27 @@ uses
   MT19937 in 'studio\random\MT19937.pas';
 
 var
-   Version : TOSVersionInfo;
+   Version       : TOSVersionInfo;
    VersionString : String;
-   OSis95 : Boolean;
+   OSis95        : Boolean;
+   Exitcode      : Integer;
 
    // command line parameters
-   Action      : String;
-   Count       : Int64;
-   InFile      : String;
-   OutFile     : String;
-   Seek        : Int64;
-   Skip        : Int64;
-   BlockSize   : Int64;
-   BlockUnit   : String;
-   Progress    : Boolean;
-   CheckSize   : Boolean;
-   Unmounts    : TStringList;
+   Action       : String;
+   Count        : Int64;
+   InFile       : String;
+   OutFile      : String;
+   Seek         : Int64;
+   Skip         : Int64;
+   BlockSize    : Int64;
+   BlockUnit    : String;
+   Progress     : Boolean;
+   CheckSize    : Boolean;
+   Unmounts     : TStringList;
    DeviceFilter : String;
+   Onocreat     : Boolean;
+   Onotrunc     : Boolean;
+   Oexcl        : Boolean;
 
    idod_BlockSize : String;
    idod_size : Boolean;
@@ -102,7 +106,7 @@ begin
 
       S := S + BlockUnit;
 
-      write(#13 + S + P + ' ');
+         stderr.write(#13 + S + P + ' ');
    end;
 end;
 
@@ -658,6 +662,7 @@ begin
    else
    begin
       Log('Unknown suffix ' + Suffix);
+      Exitcode := 1;
       Result := 0;
    end
 end;
@@ -832,11 +837,14 @@ end;
 
 var
    i : Integer;
+   j : Integer;
    Value : String;
    ProgressCallback : TDDProgress;
-   ExeName : String;
-   Parameters : TStringList;
+   ExeName     : String;
+   Parameters  : TStringList;
+   Chopper     : TStringList;
 begin
+   Exitcode := 0;
    //UseWriteln;
    UseStdError;
    Log('rawwrite dd for windows version ' + AppVersion + '.');
@@ -969,6 +977,17 @@ begin
          BlockSize := GetBlockSize(Value);
          BlockUnit := GetBlockSuffix(Value);
       end
+      else if StartsWith(Parameters[i], 'conv=', Value) then
+      begin
+         // chop up at ,
+         Chopper := TStringList.Create;
+         Chopper.CommaText := Value;
+         for j := 0 to Chopper.Count - 1 do
+         begin
+            Log(Chopper[j]);
+         end;
+         Chopper.Free;
+      end
       else if StartsWith(Parameters[i], '--filter=', Value) then
       begin
          if Value = 'removable' then
@@ -995,6 +1014,7 @@ begin
          begin
             Log('Invalid filter');
             Action := 'usage';
+            Exitcode := 1;
          end;
       end
       else if StartsWith(Parameters[i], '--unmount=', Value) then
@@ -1006,10 +1026,15 @@ begin
       begin
          Action := 'usage';
       end
+      else if (Parameters[i] = '--version') or (Parameters[i] = '-V') then
+      begin
+         Action := '';
+      end
       else
       begin
          Log('Unknown command ' +  Parameters[i]);
          Action := 'usage';
+         Exitcode := 1;
       end;
    end;
 
@@ -1066,12 +1091,12 @@ begin
             ProgressCallback.BlockSize := BlockSize;
             ProgressCallback.Count := Count;
             ProgressCallback.SetUnit(BlockUnit);
-            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, ProgressCallback.DDProgress);
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, Onotrunc, CheckSize, ProgressCallback.DDProgress);
             ProgressCallback.Free;
          end
          else
          begin
-            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, CheckSize, nil);
+            DoDD(InFile, OutFile, BlockSize, Count, Skip, Seek, Onotrunc, CheckSize, nil);
          end;
       end
       else
@@ -1083,6 +1108,10 @@ begin
    begin
       // dummy target
    end
+   else if Action = '' then
+   begin
+      // nothing to do
+   end
    else
    begin
       Log('Unknown action ' + Action);
@@ -1092,4 +1121,5 @@ begin
       Log('Press enter to close');
       readln;
    end;
+   Halt(Exitcode);
 end.

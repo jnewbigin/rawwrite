@@ -1,6 +1,6 @@
 object MainForm: TMainForm
-  Left = 718
-  Top = 459
+  Left = 948
+  Top = 409
   BorderStyle = bsSingle
   Caption = 'RawWrite'
   ClientHeight = 349
@@ -188,7 +188,7 @@ object MainForm: TMainForm
     Width = 177
     Height = 13
     Cursor = crDrag
-    Caption = 'http://uranus.it.swin.edu.au/~jn/linux'
+    Caption = 'http://www.chrysocome.net/rawwrite'
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
@@ -198,6 +198,13 @@ object MainForm: TMainForm
     ParentColor = False
     ParentFont = False
     OnClick = Label5Click
+  end
+  object Version: TLabel
+    Left = 128
+    Top = 8
+    Width = 15
+    Height = 13
+    Caption = '0.8'
   end
   object StatusBar1: TStatusBar
     Left = 0
@@ -409,19 +416,19 @@ object MainForm: TMainForm
       object Label12: TLabel
         Left = 8
         Top = 8
-        Width = 193
+        Width = 233
         Height = 41
         AutoSize = False
-        Caption = 'To report bugs in this program, contact me'
+        Caption = 'To report bugs in this program, contact me at'
         WordWrap = True
       end
       object Label6: TLabel
-        Left = 200
-        Top = 8
-        Width = 114
+        Left = 32
+        Top = 24
+        Width = 160
         Height = 13
         Cursor = crDrag
-        Caption = 'mailto:jn@it.swin.edu.au'
+        Caption = 'mailto:jnewbigin@chrysocome.net'
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlue
         Font.Height = -11
@@ -453,15 +460,6 @@ object MainForm: TMainForm
           're running the latest version'
         WordWrap = True
       end
-      object Button6: TButton
-        Left = 232
-        Top = 96
-        Width = 75
-        Height = 25
-        Caption = '&Check'
-        TabOrder = 0
-        OnClick = Button6Click
-      end
     end
   end
   object OpenDialog1: TOpenDialog
@@ -478,13 +476,5 @@ object MainForm: TMainForm
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
     Left = 320
     Top = 80
-  end
-  object AutoUpdate1: TAutoUpdate
-    ApplicationName = 'rawwrite'
-    URL = 'http://itig.it.swin.edu.au/autoupdate.php'
-    Version = '0.8'
-    VersionNumber = 8
-    Left = 296
-    Top = 40
   end
 end
