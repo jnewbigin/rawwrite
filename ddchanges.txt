@@ -1,3 +1,21 @@
+TODO: notrunc feature
+      errorlevel exit code
+      
+0.6beta2
+========
+- Implemented of=/dev/null which will just throw away the data
+- skip on stdin now works
+- fix checking size of floppy disks
+
+0.6beta1
+========
+- --progress output is in the same unit as bs is specified with
+- new filter type 'file' which will Only write to a fileystem file
+- new feature id=<drive>/od=<drive> for input disk and output disk.
+   if <drive> is the only partition on a disk, then the entire disk is selected
+   if you insert a USB disk and it is mounted as f: then 'id=f:' will select the
+   USB disk (not just the partition like if=\\.\f: would do)
+
 0.5
 ===
 - count, seek and skip can now use a multiplicative suffix like bs
