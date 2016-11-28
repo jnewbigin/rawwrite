@@ -1,5 +1,5 @@
 unit UnixBinFile;
-// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.4 2005/01/21 12:07:33 jnewbigin Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/UnixBinFile.pas,v 1.1 2005/12/05 08:26:02 jnewbigin Exp $
 
 {$IFDEF FPC}
 {$MODE Delphi}

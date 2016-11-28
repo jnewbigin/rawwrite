@@ -4,8 +4,6 @@ unit debug;
 {$MODE Delphi}
 {$ENDIF}
 
-// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/studio/debug.pas,v 1.3 2006/11/02 23:52:32 jnewbigin Exp $
-
 interface
 
 uses windows;

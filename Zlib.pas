@@ -9,7 +9,7 @@
 *****************************************************************************}
 
 unit ZLib;
-// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/Zlib.pas,v 1.1 2005/07/17 01:43:17 jnewbigin Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/Zlib.pas,v 1.2 2005/12/05 08:26:02 jnewbigin Exp $
 
 {$IFDEF FPC}
 {$MODE Delphi}
