@@ -723,7 +723,14 @@ begin
             end;
             if ReadFile2(h, PChar(Buffer), 512, Read, nil) then
             begin
-               Result := Result + 512;
+               if Read = 512 then
+               begin
+                  Result := Result + 512;
+               end
+               else
+               begin
+                  break;
+               end;
             end
             else
             begin

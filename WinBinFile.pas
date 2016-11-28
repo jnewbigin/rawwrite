@@ -1,5 +1,5 @@
 unit WinBinFile;
-// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.3 2004/09/13 10:09:46 jnewbigin Exp $
+// $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.4 2005/01/21 12:07:33 jnewbigin Exp $
 
 
 interface
@@ -78,7 +78,7 @@ type
    end;
 implementation
 
-uses SysUtils;
+uses SysUtils, debug;
 
 constructor TBinaryFile.Create;
 begin
@@ -376,12 +376,37 @@ end;
 function TBinaryFile.BlockRead2(Buf : Pointer; Count: Integer) : DWord;
 var
    Actual : DWord;
+
+   RawRead : TRAW_READ_INFO;
+
+   Sector : String;
 begin
    if not IsOpen then
    begin
       Open(0);
    end;
-   ReadFile2(F, Buf, Count, Actual, nil);
+
+// special CD testing
+
+   {SetLength(Sector, RAW_SECTOR_SIZE);
+   RawRead.DiskOffset.QuadPart := 0;
+   RawRead.SectorCount := 1;
+   RawRead.TrackMode := 0;
+
+    if ( DeviceIoControl( F,             $2403E,//CtlCode(IOCTL_CDROM_BASE, $000F, METHOD_OUT_DIRECT, FILE_READ_ACCESS),
+                          @RawRead,      sizeof(RawRead),
+                          PChar(Sector), Length(Sector),
+                          Actual,        nil )) then
+      begin
+         Log('IOCTL_CDROM_RAW_READ worked');
+      end
+      else
+      begin
+         Log('IOCTL_CDROM_RAW_READ failed');
+   Log('Error ' + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));}
+         ReadFile2(F, Buf, Count, Actual, nil);
+{         Log('Reading ' + IntToStr(Count) + ' bytes. Actual = ' + intToStr(Actual));
+      end;}
    Result := Actual;
 end;
 
@@ -412,9 +437,17 @@ end;
 procedure TBinaryFile.Seek(Index : Int64);
 var
    Distance : LARGE_INTEGER;
+   R : DWORD;
 begin
    Distance.QuadPart := Index;
-   SetFilePointer(F, Distance.LowPart, @Distance.HighPart, FILE_BEGIN);
+   R := SetFilePointer(F, Distance.LowPart, @Distance.HighPart, FILE_BEGIN);
+   if R = $ffffffff then
+   begin
+      if GetLastError <> NO_ERROR then
+      begin
+         //Log('seek error');
+      end;
+   end;
 end;
 
 function TBinaryFile.GetPos : Int64;
