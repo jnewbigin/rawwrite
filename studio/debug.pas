@@ -6,7 +6,6 @@ unit debug;
 
 interface
 
-uses windows;
 
 procedure Log(S : String);
 type DebugEvent = procedure (S : String) of object;
@@ -38,7 +37,7 @@ var
 
 implementation
 
-uses winioctl, sysutils;
+uses WinIOCTL, sysutils;
 
 var
    fOnDebug : DebugEvent;

@@ -7,7 +7,7 @@ unit studio_tools;
 interface
 
 {$IFDEF WIN32}
-uses windows, classes;
+uses classes;
 {$ELSE}
 uses classes;
 {$ENDIF}
@@ -33,7 +33,7 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 implementation
 
 {$IFDEF WIN32}
-uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc, MT19937;
+uses Zlib, sysutils, debug, Native, WinBinFile, DiskIO, md5, dialogs, WinIOCTL, persrc, MT19937;
 {$ELSE}
 uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
 {$ENDIF}

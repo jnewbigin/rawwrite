@@ -1,10 +1,12 @@
 program dd;
+
+{$MODE Delphi}
+
 {$APPTYPE CONSOLE}
 {%File 'ddchanges.txt'}
 
 uses
   SysUtils,
-  Windows,
   Classes,
   Filectrl,
   Native in 'Native.pas',
@@ -266,7 +268,7 @@ begin
             Result := FilterMatch(Device, Geometry.MediaType, Filter);
          end;
       finally
-         CloseHandle(h);
+         FileClose(h); { *Converted from CloseHandle* }
       end;
    end;
 end;
@@ -323,7 +325,7 @@ var
             end;
             Size := GetSize(h);
          finally
-            CloseHandle(h);
+            FileClose(h); { *Converted from CloseHandle* }
          end;
       end
       else

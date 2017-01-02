@@ -1,5 +1,7 @@
 unit DiskIO;
 
+{$MODE Delphi}
+
 interface
 
 uses QTThunkU, Classes, Dialogs;
@@ -45,7 +47,7 @@ type
   end;
 
 implementation
-uses Forms, sysutils, windows, winbinfile;
+uses Forms, sysutils, WinBinFile;
 
 constructor T95Disk.Create;
 var

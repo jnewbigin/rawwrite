@@ -9,7 +9,7 @@
 //
 //                          Implementation of Ronald L. Rivest's RFC 1321
 //
-//                      Copyright © 1997-1999 Medienagentur Fichtner & Meyer
+//                      Copyright Â© 1997-1999 Medienagentur Fichtner & Meyer
 //                                  Written by Matthias Fichtner
 //
 // -----------------------------------------------------------------------------------------------
@@ -36,12 +36,14 @@
 
 unit md5;
 
+{$MODE Delphi}
+
 // -----------------------------------------------------------------------------------------------
 INTERFACE
 // -----------------------------------------------------------------------------------------------
 
 uses
-	Windows;
+	SysUtils;
 
 type
 	MD5Count = array[0..1] of DWORD;
@@ -349,15 +351,15 @@ begin
 		if MapHandle <> 0 then try
 			ViewPointer := MapViewOfFile(MapHandle, FILE_MAP_READ, 0, 0, 0);
 			if ViewPointer <> nil then try
-				MD5Update(Context, ViewPointer, GetFileSize(FileHandle, nil));
+				MD5Update(Context, ViewPointer, FileSize(FileHandle) { *Converted from GetFileSize* });
 			finally
 				UnmapViewOfFile(ViewPointer);
 			end;
 		finally
-			CloseHandle(MapHandle);
+			FileClose(MapHandle); { *Converted from CloseHandle* }
 		end;
 	finally
-		CloseHandle(FileHandle);
+		FileClose(FileHandle); { *Converted from CloseHandle* }
 	end;
 	MD5Final(Context, Result);
 end;

@@ -1,4 +1,7 @@
 unit MT19937;
+
+{$MODE Delphi}
+
 {$R-} {range checking off}
 {$Q-} {overflow checking off}
 

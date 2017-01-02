@@ -1,10 +1,13 @@
 unit WinBinFile;
+
+{$MODE Delphi}
+
 // $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.4 2005/01/21 12:07:33 jnewbigin Exp $
 
 
 interface
 
-uses Windows, WinIOCTL;
+uses WinIOCTL;
 
 const OPEN_READ_ONLY = 0;
 const OPEN_READ_WRITE = 1;
@@ -196,7 +199,7 @@ end;
 
 procedure TBinaryFile.Close;
 begin
-   CloseHandle(F);
+   FileClose(F); { *Converted from CloseHandle* }
    IsOpen := False;
 end;
 
@@ -430,7 +433,7 @@ begin
    begin
       Open(0);
    end;
-   Size.LowPart := GetFileSize(F, @Size.HighPart);
+   Size.LowPart := FileSize(F); { *Converted from GetFileSize* }
    Result := Size.QuadPart;
 end;
 

@@ -1,12 +1,25 @@
 unit WinIOCTL;
 
+{$MODE Delphi}
+
 // John Newbigin
 // from winioctl.h
 
 {$A+,Z+}
 
 interface
-   uses Windows;
+
+uses Windows, LCLIntf, LCLType, LMessages;
+
+type
+  TLargeInteger = packed record
+  case Boolean of
+      True:(LowPart: LongWord;
+            HighPart: LongInt);
+      False:(QuadPart: Int64);
+  end;
+  PLargeInteger = ^TLargeInteger;
+
 
 const
    Large0 : _Large_Integer = (LowPart : 0; HighPart : 0) ;
