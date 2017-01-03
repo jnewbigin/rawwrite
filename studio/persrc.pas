@@ -9,7 +9,11 @@ interface
 {$IFDEF WIN32}
 uses Windows, classes, sysutils, WinBinFile;
 {$ELSE}
+{$IFDEF WIN64}
+uses Windows, classes, sysutils, WinBinFile;
+{$ELSE}
 uses classes, sysutils, UnixBinFile;
+{$ENDIF}
 {$ENDIF}
 
 type TPEHeader = record

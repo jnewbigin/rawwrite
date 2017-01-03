@@ -10,7 +10,11 @@ interface
 {$IfDef Win32}
 uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
 {$Else}
+{$IfDef Win64}
+uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
+{$Else}
 uses NotWindows;
+{$EndIF}
 {$EndIF}
 
 

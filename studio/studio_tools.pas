@@ -8,8 +8,14 @@ interface
 
 {$IFDEF WIN32}
 uses Windows, classes;
+{$DEFINE WINDOWS}
+{$ELSE}
+{$IFDEF WIN64}
+uses Windows, classes;
+{$DEFINE WINDOWS}
 {$ELSE}
 uses classes;
+{$ENDIF}
 {$ENDIF}
 
 const AppVersion = '1.0beta1';
@@ -32,7 +38,7 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 
 implementation
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 uses sysutils, debug, Native, WinBinFile, md5, dialogs, WinIOCTL, persrc, MT19937;
 {$ELSE}
 uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
@@ -40,7 +46,7 @@ uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
 
 procedure ShowError(Action : String);
 begin
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
    Log('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
 {$ELSE}
    Log('Error ' + Action + ': perror NYI');
@@ -82,7 +88,7 @@ begin
    end;
 end;
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 function LoadDiskResource(Name : String) : String;
 var
    h : THandle;
@@ -340,7 +346,7 @@ begin
    end;
 end;
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 
 function GetSize(h : THandle) : Int64;
 var
@@ -771,12 +777,12 @@ begin
 
 end;
 {$ELSE}
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; NoTruncateOut : Boolean; StopType : Boolean; Callback : ProgressEvent);
 begin
 end;
 {$ENDIF}
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 function GetDriveStrings(StringList : TStringList) : Boolean;
 var
    Error : DWORD;
