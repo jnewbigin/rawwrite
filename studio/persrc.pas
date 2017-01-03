@@ -7,7 +7,7 @@ unit persrc;
 interface
 
 {$IFDEF WIN32}
-uses classes, sysutils, WinBinFile;
+uses Windows, classes, sysutils, WinBinFile;
 {$ELSE}
 uses classes, sysutils, UnixBinFile;
 {$ENDIF}

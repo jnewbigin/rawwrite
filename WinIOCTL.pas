@@ -22,7 +22,7 @@ type
 
 
 const
-   Large0 : _Large_Integer = (LowPart : 0; HighPart : 0) ;
+   Large0 : TLargeInteger = (LowPart : 0; HighPart : 0) ;
 
 function div2(a : LongInt; b : LongInt) : LongInt;
 

@@ -43,7 +43,7 @@ INTERFACE
 // -----------------------------------------------------------------------------------------------
 
 uses
-	SysUtils;
+	Windows, SysUtils;
 
 type
 	MD5Count = array[0..1] of DWORD;
@@ -343,6 +343,7 @@ var
 	ViewPointer: pointer;
 	Context: MD5Context;
 begin
+        (*
 	MD5Init(Context);
 	FileHandle := CreateFile(pChar(N), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,
 		nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
@@ -362,6 +363,7 @@ begin
 		FileClose(FileHandle); { *Converted from CloseHandle* }
 	end;
 	MD5Final(Context, Result);
+        *)
 end;
 
 // Create hex representation of given Digest

@@ -4,7 +4,7 @@ unit Native;
 
 interface
 
-uses WinIOCTL, classes;
+uses Windows, LCLIntf, LCLType, LMessages, WinIOCTL, classes;
 
 const
 

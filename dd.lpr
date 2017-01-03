@@ -7,6 +7,8 @@ program dd;
 
 uses
   SysUtils,
+  Interfaces,
+  Windows,
   Classes,
   Filectrl,
   Native in 'Native.pas',

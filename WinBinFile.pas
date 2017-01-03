@@ -7,7 +7,12 @@ unit WinBinFile;
 
 interface
 
-uses WinIOCTL;
+{$IfDef Win32}
+uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
+{$Else}
+uses NotWindows;
+{$EndIF}
+
 
 const OPEN_READ_ONLY = 0;
 const OPEN_READ_WRITE = 1;
@@ -428,12 +433,23 @@ end;
 function TBinaryFile.FileSize : Int64;
 var
    Size : LARGE_INTEGER;
+   e : DWORD;
 begin
    if not IsOpen then
    begin
       Open(0);
    end;
-   Size.LowPart := FileSize(F); { *Converted from GetFileSize* }
+   Size.LowPart := GetFileSize(F, @Size.HighPart);
+   if Size.LowPart = $FFFFFFFF then
+   begin
+      e := GetLastError;
+      Log('GetFileSize error ' + IntToStr(e));
+      if e <> NO_ERROR then
+      begin
+         Result := 0;
+         exit;
+      end;
+   end;
    Result := Size.QuadPart;
 end;
 

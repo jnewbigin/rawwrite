@@ -6,6 +6,7 @@ unit debug;
 
 interface
 
+uses Windows, LCLIntf, LCLType, LMessages;
 
 procedure Log(S : String);
 type DebugEvent = procedure (S : String) of object;

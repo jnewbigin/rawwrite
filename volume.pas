@@ -4,7 +4,7 @@ unit volume;
 
 interface
 
-uses sysutils;
+uses Windows, LCLIntf, LCLType, LMessages, sysutils;
 
 const
   kernel32  = 'kernel32.dll';
