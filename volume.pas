@@ -1,8 +1,10 @@
 unit volume;
 
+{$MODE Delphi}
+
 interface
 
-uses Windows, sysutils;
+uses Windows, LCLIntf, LCLType, LMessages, sysutils;
 
 const
   kernel32  = 'kernel32.dll';

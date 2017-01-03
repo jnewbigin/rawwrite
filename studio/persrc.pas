@@ -7,9 +7,13 @@ unit persrc;
 interface
 
 {$IFDEF WIN32}
-uses windows, classes, sysutils, winbinfile;
+uses Windows, classes, sysutils, WinBinFile;
+{$ELSE}
+{$IFDEF WIN64}
+uses Windows, classes, sysutils, WinBinFile;
 {$ELSE}
 uses classes, sysutils, UnixBinFile;
+{$ENDIF}
 {$ENDIF}
 
 type TPEHeader = record

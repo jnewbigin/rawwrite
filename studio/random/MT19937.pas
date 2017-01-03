@@ -1,4 +1,7 @@
 unit MT19937;
+
+{$MODE Delphi}
+
 {$R-} {range checking off}
 {$Q-} {overflow checking off}
 
@@ -181,16 +184,21 @@ end;
 Function  RandInt_MT19937(Range: longint):longint;
 // EAX <- Range
 // Result -> EAX
+{$IfDef Win32}
 asm
   PUSH  EAX
   CALL  genrand_MT19937
   POP   EDX
   MUL   EDX
   MOV   EAX,EDX
+{$Else}
+begin
+{$EndIf}
 end;
 
 function RandFloat_MT19937: Double;
 const   Minus32: double = -32.0;
+{$IfDef Win32}
 asm
   CALL    genrand_MT19937
   PUSH    0
@@ -200,6 +208,9 @@ asm
   ADD     ESP,8
   FSCALE
   FSTP    ST(1)
+{$Else}
+begin
+{$EndIf}
 end;
 
 procedure FillBuffer_MT19937(Buffer : PChar; Length : Integer); // Fills a buffer.  Written by John Newbigin

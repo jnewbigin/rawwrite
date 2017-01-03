@@ -1,10 +1,22 @@
 unit WinBinFile;
+
+{$MODE Delphi}
+
 // $Header: /home/cso/jnewbigin/cvsroot/rawwrite/WinBinFile.pas,v 1.4 2005/01/21 12:07:33 jnewbigin Exp $
 
 
 interface
 
-uses Windows, WinIOCTL;
+{$IfDef Win32}
+uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
+{$Else}
+{$IfDef Win64}
+uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
+{$Else}
+uses NotWindows;
+{$EndIF}
+{$EndIF}
+
 
 const OPEN_READ_ONLY = 0;
 const OPEN_READ_WRITE = 1;
@@ -196,7 +208,7 @@ end;
 
 procedure TBinaryFile.Close;
 begin
-   CloseHandle(F);
+   FileClose(F); { *Converted from CloseHandle* }
    IsOpen := False;
 end;
 
@@ -425,12 +437,23 @@ end;
 function TBinaryFile.FileSize : Int64;
 var
    Size : LARGE_INTEGER;
+   e : DWORD;
 begin
    if not IsOpen then
    begin
       Open(0);
    end;
    Size.LowPart := GetFileSize(F, @Size.HighPart);
+   if Size.LowPart = $FFFFFFFF then
+   begin
+      e := GetLastError;
+      Log('GetFileSize error ' + IntToStr(e));
+      if e <> NO_ERROR then
+      begin
+         Result := 0;
+         exit;
+      end;
+   end;
    Result := Size.QuadPart;
 end;
 

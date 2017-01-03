@@ -1,9 +1,13 @@
 program dd;
+
+{$MODE Delphi}
+
 {$APPTYPE CONSOLE}
 {%File 'ddchanges.txt'}
 
 uses
   SysUtils,
+  Interfaces,
   Windows,
   Classes,
   Filectrl,
@@ -45,7 +49,7 @@ var
 
 {
     dd for windows
-    Copyright (C) 2003 John Newbigin <jn@it.swin.edu.au>
+    Copyright (C) 2017 John Newbigin <jnewbigin@chrysocome.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -266,7 +270,7 @@ begin
             Result := FilterMatch(Device, Geometry.MediaType, Filter);
          end;
       finally
-         CloseHandle(h);
+         FileClose(h); { *Converted from CloseHandle* }
       end;
    end;
 end;
@@ -323,7 +327,7 @@ var
             end;
             Size := GetSize(h);
          finally
-            CloseHandle(h);
+            FileClose(h); { *Converted from CloseHandle* }
          end;
       end
       else
@@ -848,7 +852,7 @@ begin
    //UseWriteln;
    UseStdError;
    Log('rawwrite dd for windows version ' + AppVersion + '.');
-   Log('Written by John Newbigin <jn@it.swin.edu.au>');
+   Log('Written by John Newbigin <jnewbigin@chrysocome.net>');
    Log('This program is covered by terms of the GPL Version 2.');
    Log('');
 

@@ -7,12 +7,18 @@ unit studio_tools;
 interface
 
 {$IFDEF WIN32}
-uses windows, classes;
+uses Windows, classes;
+{$DEFINE WINDOWS}
+{$ELSE}
+{$IFDEF WIN64}
+uses Windows, classes;
+{$DEFINE WINDOWS}
 {$ELSE}
 uses classes;
 {$ENDIF}
+{$ENDIF}
 
-const AppVersion = '0.6beta3';
+const AppVersion = '1.0beta1';
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;
@@ -32,15 +38,15 @@ function GetDriveTypeDescription(DriveType : Integer) : String;
 
 implementation
 
-{$IFDEF WIN32}
-uses zlib, sysutils, debug, native, winbinfile, diskio, md5, dialogs, winioctl, persrc, MT19937;
+{$IFDEF WINDOWS}
+uses sysutils, debug, Native, WinBinFile, md5, dialogs, WinIOCTL, persrc, MT19937;
 {$ELSE}
 uses zlib, sysutils, debug, UnixBinFile, md5, persrc;
 {$ENDIF}
 
 procedure ShowError(Action : String);
 begin
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
    Log('Error ' + Action + ': ' + IntToStr(Windows.GetLastError) + ' ' + SysErrorMessage(Windows.GetLastError));
 {$ELSE}
    Log('Error ' + Action + ': perror NYI');
@@ -82,7 +88,7 @@ begin
    end;
 end;
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 function LoadDiskResource(Name : String) : String;
 var
    h : THandle;
@@ -187,7 +193,7 @@ begin
    begin
       Stub := LoadDiskResource('STUB');
       try
-         Stub := Zlib.ZDecompressStr(Stub);
+         Stub := '';//Zlib.ZDecompressStr(Stub);
       except
       end;
       if Length(Stub) = 0 then
@@ -270,7 +276,7 @@ begin
                      Log('Loading ' + Chopper[0]);
                      Data := LoadDiskFile(Chopper[0]);
                      Checksum := MD5Print(MD5String(Data));
-                     ZData := ZCompressStr(Data, zcMax);
+                     ZData := '';//ZCompressStr(Data, zcMax);
 
                      DiskName := 'DISK' + IntToStr(i);
                      Chopper.Add(DiskName);
@@ -299,7 +305,7 @@ begin
          end;
 
 // we could compress the config info but it makes it hard to debug
-         DataList.Add(ZCompressStr(Config.Text, zcMax));
+         //DataList.Add(ZCompressStr(Config.Text, zcMax));
          NameList.Add('DISKINFO');
          DataList.Add(Config.Text);
 
@@ -340,7 +346,7 @@ begin
    end;
 end;
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 
 function GetSize(h : THandle) : Int64;
 var
@@ -375,11 +381,11 @@ var
    MagicRandom : Boolean;
    StdOut      : Boolean;
    MagicNull   : Boolean;
-
+(*
    In95Disk : T95Disk;
    Out95Disk : T95Disk;
    Out95SectorCount : LongInt;
-
+*)
    Value : String;
    h : THandle;
    Actual : DWORD;
@@ -412,10 +418,10 @@ begin
    InBinFile  := nil;
    InSize     := 0;
    OutBinFile := nil;
-   In95Disk   := nil;
+(*   In95Disk   := nil;
    Out95Disk  := nil;
    Out95SectorCount := 0;
-
+*)
    MagicZero   := False;
    MagicRandom := False;
    StdOut      := False;
@@ -518,10 +524,10 @@ begin
       try
          if (Length(OutFile) = 2) and (OutFile[2] = ':') then
          begin
-            Log('read from 95 disk');
-            Out95Disk := T95Disk.Create;
+            Log('read from 95 disk is not supported in this version of dd');
+(*            Out95Disk := T95Disk.Create;
             Out95Disk.SetDiskByName(OutFile);
-            Out95SectorCount := 0;
+            Out95SectorCount := 0;*)
          end
          else
          begin
@@ -588,10 +594,10 @@ begin
                   OutBinFile.Seek(Seek);
                end;
             end
-            else if Assigned(Out95Disk) then
+            (*else if Assigned(Out95Disk) then
             begin
                Out95SectorCount := Seek div 512;
-            end;
+            end*);
             //Log('seek to ' + IntToStr(OutBinFile.GetPos));
          end;
 
@@ -682,7 +688,7 @@ begin
                   end;
                end;
             end
-            else if assigned(Out95Disk) then
+            (*else if assigned(Out95Disk) then
             begin
                if Out95Disk.WriteSector(Out95SectorCount, PChar(Buffer), Actual div 512) then
                begin
@@ -693,7 +699,7 @@ begin
                begin
                   Actual2 := 0;
                end;
-            end
+            end*)
             else
             begin
                // no device to write to... must be an error
@@ -771,12 +777,12 @@ begin
 
 end;
 {$ELSE}
-procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; Callback : ProgressEvent);
+procedure DoDD(InFile : String; OutFile : String; BlockSize : Int64; Count : Int64; Skip : Int64; Seek : int64; NoTruncateOut : Boolean; StopType : Boolean; Callback : ProgressEvent);
 begin
 end;
 {$ENDIF}
 
-{$IFDEF WIN32}
+{$IFDEF WINDOWS}
 function GetDriveStrings(StringList : TStringList) : Boolean;
 var
    Error : DWORD;

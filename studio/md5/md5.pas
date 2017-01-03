@@ -9,7 +9,7 @@
 //
 //                          Implementation of Ronald L. Rivest's RFC 1321
 //
-//                      Copyright © 1997-1999 Medienagentur Fichtner & Meyer
+//                      Copyright Â© 1997-1999 Medienagentur Fichtner & Meyer
 //                                  Written by Matthias Fichtner
 //
 // -----------------------------------------------------------------------------------------------
@@ -36,12 +36,14 @@
 
 unit md5;
 
+{$MODE Delphi}
+
 // -----------------------------------------------------------------------------------------------
 INTERFACE
 // -----------------------------------------------------------------------------------------------
 
 uses
-	Windows;
+	Windows, SysUtils;
 
 type
 	MD5Count = array[0..1] of DWORD;
@@ -341,6 +343,7 @@ var
 	ViewPointer: pointer;
 	Context: MD5Context;
 begin
+        (*
 	MD5Init(Context);
 	FileHandle := CreateFile(pChar(N), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE,
 		nil, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
@@ -349,17 +352,18 @@ begin
 		if MapHandle <> 0 then try
 			ViewPointer := MapViewOfFile(MapHandle, FILE_MAP_READ, 0, 0, 0);
 			if ViewPointer <> nil then try
-				MD5Update(Context, ViewPointer, GetFileSize(FileHandle, nil));
+				MD5Update(Context, ViewPointer, FileSize(FileHandle) { *Converted from GetFileSize* });
 			finally
 				UnmapViewOfFile(ViewPointer);
 			end;
 		finally
-			CloseHandle(MapHandle);
+			FileClose(MapHandle); { *Converted from CloseHandle* }
 		end;
 	finally
-		CloseHandle(FileHandle);
+		FileClose(FileHandle); { *Converted from CloseHandle* }
 	end;
 	MD5Final(Context, Result);
+        *)
 end;
 
 // Create hex representation of given Digest

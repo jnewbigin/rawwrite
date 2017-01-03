@@ -1,5 +1,7 @@
 unit QTThunkU;
 
+{$MODE Delphi}
+
 {$R-,S-,Q-}
 
 //Define only one of these symbols
@@ -12,7 +14,7 @@ unit QTThunkU;
 interface
 
 uses
-  Windows, SysUtils;
+  SysUtils;
 
 type
   THandle16 = Word;

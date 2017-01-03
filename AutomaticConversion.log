@@ -1,0 +1,64 @@
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\dd.dpr *
+Hint: Added defines -dBorland -dVer150 -dDelphi7 -dCompiler6_Up -dPUREPASCAL in custom options
+Hint: Found all unit files
+Hint: Removed unit "Windows" in uses section.
+Hint: Replaced call CloseHandle(h); with FileClose(h); { *Converted from CloseHandle* }
+Hint: Replaced call CloseHandle(h); with FileClose(h); { *Converted from CloseHandle* }
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\dd.dpr *
+Hint: 
+Hint: *** Converting unit files belonging to project/package ***
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\Native.pas *
+Hint: Removed unit "Windows" in uses section.
+Hint: Replaced call CloseHandle(hObject); with FileClose(hObject); { *Converted from CloseHandle* }
+Hint: Replaced call CloseHandle(hObject); with FileClose(hObject); { *Converted from CloseHandle* }
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\volume.pas *
+Hint: Removed unit "Windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\WinBinFile.pas *
+Hint: Removed unit "Windows" in uses section.
+Hint: Replaced call GetFileSize(F, @Size.HighPart); with FileSize(F); { *Converted from GetFileSize* }
+Hint: Replaced call CloseHandle(F); with FileClose(F); { *Converted from CloseHandle* }
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\WinIOCTL.pas *
+Hint: Removed unit "Windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\studio\studio_tools.pas *
+Hint: Fixed character case of unit "zlib" to "Zlib".
+Hint: Fixed character case of unit "native" to "Native".
+Hint: Fixed character case of unit "winbinfile" to "WinBinFile".
+Hint: Fixed character case of unit "diskio" to "DiskIO".
+Hint: Fixed character case of unit "winioctl" to "WinIOCTL".
+Hint: Removed unit "windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\studio\debug.pas *
+Hint: Fixed character case of unit "winioctl" to "WinIOCTL".
+Hint: Removed unit "windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\studio\md5\md5.pas *
+Hint: Changed encoding from cp1252 to UTF-8
+Hint: Removed unit "Windows" in uses section.
+Hint: Replaced call CloseHandle(FileHandle); with FileClose(FileHandle); { *Converted from CloseHandle* }
+Hint: Added unit SysUtils to uses section
+Hint: Replaced call CloseHandle(MapHandle); with FileClose(MapHandle); { *Converted from CloseHandle* }
+Hint: Replaced call GetFileSize(FileHandle, nil) with FileSize(FileHandle) { *Converted from GetFileSize* }
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\studio\persrc.pas *
+Hint: Fixed character case of unit "winbinfile" to "WinBinFile".
+Hint: Removed unit "windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\studio\random\MT19937.pas *
+Hint: 
+Hint: *** Converting unit files found during conversion ***
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\DiskIO.pas *
+Hint: Fixed character case of unit "winbinfile" to "WinBinFile".
+Hint: Removed unit "windows" in uses section.
+Hint: * Converting file C:\Users\Administrator\working\rawwrite\QTThunkU.pas *
+Hint: Removed unit "Windows" in uses section.
+Hint: 
+Hint: *** Fixing used units and Repairing form files ***
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\Native.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\volume.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\WinBinFile.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\WinIOCTL.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\studio\studio_tools.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\studio\debug.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\studio\md5\md5.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\studio\persrc.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\studio\random\MT19937.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\DiskIO.pas *
+Hint: * Fixing used units for file C:\Users\Administrator\working\rawwrite\QTThunkU.pas *
+Hint: Conversion took: 00:00:04
+Hint: Conversion Ready.

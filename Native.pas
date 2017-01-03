@@ -1,8 +1,10 @@
 unit Native;
 
+{$MODE Delphi}
+
 interface
 
-uses Windows, WinIOCTL, classes;
+uses Windows, LCLIntf, LCLType, LMessages, WinIOCTL, classes;
 
 const
 
@@ -554,7 +556,7 @@ begin
    end;
 
    //NtClose(hObj);
-   CloseHandle(hObject);
+   FileClose(hObject); { *Converted from CloseHandle* }
    end
    else
 	begin
@@ -611,7 +613,7 @@ begin
          Result := Data;
       end;
 
-      CloseHandle(hObject);
+      FileClose(hObject); { *Converted from CloseHandle* }
    end;
 end;
 
