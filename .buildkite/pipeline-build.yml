@@ -1,0 +1,6 @@
+---
+steps:
+        - name: 'Build'
+          command: auto/build.sh
+          agents:
+                  queue: 'windows:lazarus'

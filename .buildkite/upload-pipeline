@@ -1,0 +1,5 @@
+#!/bin/bash
+. $(dirname $0)/../.buildkite/env.sh
+
+next_step build
+
