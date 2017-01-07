@@ -1,6 +1,4 @@
 #!/bin/bash
-echo "This is $0"
-sleep 5
 . $(dirname $0)/../.buildkite/env.sh
 
 next_step build
