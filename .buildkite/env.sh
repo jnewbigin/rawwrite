@@ -17,18 +17,20 @@ function next_step()
 		QUEUE=$((grep '^# QUEUE=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2)
 		NAME=$((grep '^# NAME=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2-)
 		if [ -z "$QUEUE" ] ; then
+			# Should we default to what this is currenly running on?
 			QUEUE=default
 		fi
 		if [ -z "$NAME" ] ; then
 			NAME="${1}"
 		fi
+		SCRIPT=".buildkite/script.bat ${1}"
 		# grep and see if there is a QUEUE tag in the script
 		# We should also check if there is a .buildkite/docker-compose.yml file
 		cat << END | buildkite-agent pipeline upload
 ---
 steps:
         - name: '${NAME}'
-          command: scripts/${1}.sh
+          command: '${SCRIPT}'
           agents:
                   queue: '${QUEUE}'
 END
@@ -44,7 +46,7 @@ END
 echo "--- build environment"
 echo DIR=$DIR
 echo PWD=`pwd`
-# If we are in a docker container, we need to chown the files
+set
 
 # Make a short version of $BUILDKITE_MESSAGE
 SHORT_MESSAGE=$(echo "$BUILDKITE_MESSAGE" | head -1)
