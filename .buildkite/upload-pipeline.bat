@@ -7,4 +7,4 @@ echo %x0
 echo %~n0
 echo %dp0
 echo %~dp0
-"C:\Program Files\Git\git-bash.exe" --cd-to-home "%0"
+"C:\Program Files\Git\git-bash.exe" --cd-to-home -c "cd %~n0 ; ./%~dp0"
