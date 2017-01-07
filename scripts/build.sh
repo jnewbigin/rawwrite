@@ -1,4 +1,5 @@
 #!/bin/bash
+# QUEUE=windows:lazarus
 
 set -e -u -o pipefail
 
