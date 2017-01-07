@@ -26,3 +26,8 @@ _$*
 *.ln
 core
 # CVS default ignores end
+*.ppu
+dd.compiled
+dd.dbg*
+dd.or
+dd.lps
