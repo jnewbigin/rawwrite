@@ -7,6 +7,7 @@ echo %x0
 echo %~n0
 echo %dp0
 echo %~dp0
-echo running "C:\Program Files\Git\git-bash.exe" --cd-to-home -x -c "cd %~dp0 ; ./%~n0"
-"C:\Program Files\Git\git-bash.exe" --cd-to-home -x -c "cd %~dp0 ; ./%~n0"
+cd "%~dp0"
+echo running "C:\Program Files\Git\git-bash.exe" -x "./%~n0"
+"C:\Program Files\Git\git-bash.exe" -x "./%~n0"
 echo done
