@@ -23,7 +23,8 @@ LTARGET=$(echo $TARGET | sed 's|^\(.*\)|\l\1|g')
 
 /c/lazarus/lazbuild.exe --lazarusdir=c:\\lazarus dd.lpi --build-mode=${CTARGET}${BITS}
 
-mv dd.exe dd${LTARGET}.exe
-put_artifact dd${LTARGET}.exe 
+file dd.exe
+mv dd.exe dd${LTARGET}${BITS}.exe
+put_artifact dd${LTARGET}${BITS}.exe 
 
 next_step test $TARGET ${BITS}
