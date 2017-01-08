@@ -23,7 +23,7 @@ function next_step()
 		if [ -z "$NAME" ] ; then
 			NAME="${1}"
 		fi
-		SCRIPT=".buildkite/script.bat ${1} ${2}"
+		SCRIPT=".buildkite/script.bat ${1} ${2} ${3}"
 		# grep and see if there is a QUEUE tag in the script
 		# We should also check if there is a .buildkite/docker-compose.yml file
 		cat << END | buildkite-agent pipeline upload
