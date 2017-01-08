@@ -7,9 +7,8 @@ set -x
 
 . $(dirname $0)/../.buildkite/env.sh
 
-if [ "$1" == "build" ] ; then
+if [ "$1" == "test" ] ; then
 	shift
-
 fi
 
 TARGET=$1
