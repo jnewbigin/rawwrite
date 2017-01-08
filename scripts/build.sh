@@ -5,12 +5,14 @@ set -e -u -o pipefail
 
 . $(dirname $0)/../.buildkite/env.sh
 
-echo $*
-exit 1
+if [ "$1" == "build" ] ; then
+	shift
 
-TARGET=Debug${BITS}
+fi
+
+TARGET=$1
 LTARGET=$(echo $TARGET | tr [A-Z] [a-z])
-BITS=32
+BITS=$2
 
 /c/lazarus/lazbuild.exe --lazarusdir=c:\\lazarus dd.lpi --build-mode=$TARGET
 
