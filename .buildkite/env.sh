@@ -43,6 +43,46 @@ END
 	fi
 }
 
+
+function put_artifact()
+{
+        local FILE="${1}"
+        local OPTS="${2}"
+        local OPTS2="${3}"
+
+        if [ "$BUILDKITE_AGENT_ACCESS_TOKEN" ] ; then
+                echo "Uploading $FILE to buildkite"
+                if [ "$OPTS" = "--compress-remote" ] ; then
+                        $PV "${FILE}" | bzip2 > "${FILE}".bz2
+                        rm -f "${FILE}"
+                        buildkite-agent artifact upload "${FILE}.bz2"
+                        if [ "$OPTS2" = "--remove" ] ; then
+                                rm -f "${FILE}.bz2"
+                        fi
+                else
+                        buildkite-agent artifact upload "${FILE}"
+                fi
+        else
+                mkdir -p "$DIR/artifacts"
+                ARTIFACT="${DIR}/artifacts/$(basename "${FILE}")"
+                echo -n "Creating artifact $ARTIFACT"
+                rm -f "$ARTIFACT"
+                ln -f "${PWD}/${FILE}" "$ARTIFACT" && echo " done" || \
+                       ( echo " need to use a symlink" ; ln -f -r -s "${PWD}/${FILE}" "$ARTIFACT" ) # if that does not work, symlink
+        fi
+}
+
+function get_artifact()
+{
+        local FILE="${1}"
+        if [ "$BUILDKITE_AGENT_ACCESS_TOKEN" ] ; then
+                buildkite-agent artifact download "${FILE}" .
+        else
+                ln -s -f "${DIR}/artifacts/${FILE}" .
+        fi
+}
+
+
 echo "--- build environment"
 echo DIR=$DIR
 echo PWD=`pwd`
