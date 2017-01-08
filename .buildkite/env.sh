@@ -47,8 +47,8 @@ END
 function put_artifact()
 {
         local FILE="${1}"
-        local OPTS="${2}"
-        local OPTS2="${3}"
+        local OPTS="${2:-}"
+        local OPTS2="${3:-}"
 
         if [ "$BUILDKITE_AGENT_ACCESS_TOKEN" ] ; then
                 echo "Uploading $FILE to buildkite"
