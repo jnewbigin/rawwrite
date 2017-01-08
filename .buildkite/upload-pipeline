@@ -1,5 +1,6 @@
 #!/bin/bash
 . $(dirname $0)/../.buildkite/env.sh
 
-next_step build
+next_step build debug 32
+next_step build debug 64
 
