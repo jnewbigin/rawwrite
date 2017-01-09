@@ -20,3 +20,9 @@ get_artifact $FILE
 echo "This is a test" | ./$FILE
 
 #next_step test $TARGET ${BITS}
+if [ "$TARGET" = "debug" ] ; then
+	next_step build release ${BITS}
+else
+	next_step package "$TARGET" ${BITS}
+fi
+
