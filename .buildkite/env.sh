@@ -16,6 +16,8 @@ function next_step()
 		echo "Generating pipeline for ${1}"
 		QUEUE=$((grep '^# QUEUE=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2)
 		NAME=$((grep '^# NAME=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2-)
+		BLOCK=$( (grep '^# BLOCK=' "${DIR}/auto/${1}.sh" || true) | cut -d = -f 2)
+		WAIT=$( (grep '^# WAIT=' "${DIR}/auto/${1}.sh" || true) | cut -d = -f 2)
 		if [ -z "$QUEUE" ] ; then
 			# Should we default to what this is currenly running on?
 			QUEUE=default
@@ -23,13 +25,24 @@ function next_step()
 		if [ -z "$NAME" ] ; then
 			NAME="${1}"
 		fi
+		if [ "$BLOCK" ] ; then
+			BLOCK_YAML="        - block: '${BLOCK}'
+
+"
+		else if [ "$WAIT" ] ; then
+			BLOCK_YAML="        - wait
+
+"
+		else
+			BLOCK_YAML=""
+		fi
 		SCRIPT=".buildkite/script.bat ${1} ${2} ${3}"
 		# grep and see if there is a QUEUE tag in the script
 		# We should also check if there is a .buildkite/docker-compose.yml file
 		cat << END | buildkite-agent pipeline upload
 ---
 steps:
-        - name: '${NAME}'
+${BLOCK_YAML}        - name: '${NAME}'
           command: '${SCRIPT}'
           agents:
                   queue: '${QUEUE}'

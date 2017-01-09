@@ -19,3 +19,4 @@ get_artifact $FILE
 
 echo "I should package $FILE"
 
+next_step package-combined
