@@ -80,9 +80,7 @@ Type
 procedure sgenrand_MT19937(seed: longint);         // Initialization by seed
 procedure lsgenrand_MT19937(const seed_array: tMT19937StateArray); // Initialization by array of seeds
 procedure randomize_MT19937;                       // randomization
-function  randInt_MT19937(Range: longint):longint; // integer RANDOM with positive range
 function  genrand_MT19937: longint;                // random longint (full range);
-function  randFloat_MT19937: Double;               // float RANDOM on 0..1 interval
 
 procedure FillBuffer_MT19937(Buffer : PChar; Length : Integer); // Fills a buffer.  Written by John Newbigin
 type PLongInt = ^LongInt;
@@ -178,39 +176,6 @@ begin
   System.randomize;                   // randseed value based on system time is generated
   sgenrand_MT19937(System.randSeed);  // initialize generator state array
   System.randseed := OldRandSeed;     // restore system RandSeed
-end;
-
-// bug fixed 21.6.2000. 
-Function  RandInt_MT19937(Range: longint):longint;
-// EAX <- Range
-// Result -> EAX
-{$IfDef Win32}
-asm
-  PUSH  EAX
-  CALL  genrand_MT19937
-  POP   EDX
-  MUL   EDX
-  MOV   EAX,EDX
-{$Else}
-begin
-{$EndIf}
-end;
-
-function RandFloat_MT19937: Double;
-const   Minus32: double = -32.0;
-{$IfDef Win32}
-asm
-  CALL    genrand_MT19937
-  PUSH    0
-  PUSH    EAX
-  FLD     Minus32
-  FILD    qword ptr [ESP]
-  ADD     ESP,8
-  FSCALE
-  FSTP    ST(1)
-{$Else}
-begin
-{$EndIf}
 end;
 
 procedure FillBuffer_MT19937(Buffer : PChar; Length : Integer); // Fills a buffer.  Written by John Newbigin

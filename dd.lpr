@@ -847,6 +847,9 @@ var
    ExeName     : String;
    Parameters  : TStringList;
    Chopper     : TStringList;
+
+{$R *.res}
+
 begin
    Exitcode := 0;
    //UseWriteln;
