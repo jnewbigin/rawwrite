@@ -5,6 +5,7 @@ set -eo pipefail
 
 DIR=$(dirname "$(readlink -f "$0")")/..
 
+SCRIPT_DIR=scripts
 # Tell buildkite which step to run next
 function next_step()
 {
@@ -12,12 +13,12 @@ function next_step()
 	if [ -f "${DIR}/.buildkite/pipeline-${1}.yml" ] ; then
 		echo "Activating pipeline ${1}"
 		buildkite-agent pipeline upload < ${DIR}/.buildkite/pipeline-${1}.yml
-	elif [ -f "${DIR}/scripts/${1}.sh" ] ; then
+	elif [ -f "${DIR}/${SCRIPT_DIR}/${1}.sh" ] ; then
 		echo "Generating pipeline for ${1}"
-		QUEUE=$((grep '^# QUEUE=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2)
-		NAME=$((grep '^# NAME=' "${DIR}/scripts/${1}.sh" || true) | cut -d = -f 2-)
-		BLOCK=$( (grep '^# BLOCK=' "${DIR}/auto/${1}.sh" || true) | cut -d = -f 2)
-		WAIT=$( (grep '^# WAIT=' "${DIR}/auto/${1}.sh" || true) | cut -d = -f 2)
+		QUEUE=$((grep '^# QUEUE=' "${DIR}/${SCRIPT_DIR}/${1}.sh" || true) | cut -d = -f 2)
+		NAME=$((grep '^# NAME=' "${DIR}/${SCRIPT_DIR}/${1}.sh" || true) | cut -d = -f 2-)
+		BLOCK=$( (grep '^# BLOCK=' "${DIR}/${SCRIPT_DIR}/${1}.sh" || true) | cut -d = -f 2)
+		WAIT=$( (grep '^# WAIT=' "${DIR}/${SCRIPT_DIR}/${1}.sh" || true) | cut -d = -f 2)
 		if [ -z "$QUEUE" ] ; then
 			# Should we default to what this is currenly running on?
 			QUEUE=default
