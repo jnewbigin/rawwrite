@@ -29,7 +29,7 @@ function next_step()
 			BLOCK_YAML="        - block: '${BLOCK}'
 
 "
-		else if [ "$WAIT" ] ; then
+		elif [ "$WAIT" ] ; then
 			BLOCK_YAML="        - wait
 
 "
