@@ -37,7 +37,7 @@ function next_step()
 		else
 			BLOCK_YAML=""
 		fi
-		SCRIPT=".buildkite/script.bat ${1} ${2} ${3}"
+		SCRIPT=".buildkite/script.bat ${1} ${2:-} ${3:-}"
 		# grep and see if there is a QUEUE tag in the script
 		# We should also check if there is a .buildkite/docker-compose.yml file
 		cat << END | buildkite-agent pipeline upload
