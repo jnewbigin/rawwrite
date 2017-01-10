@@ -15,4 +15,4 @@ get_artifact $FILE2
 
 echo "I should package $FILE1 and $FILE2"
 
-next_step release
+next_step publish
