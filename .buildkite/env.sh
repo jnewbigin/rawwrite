@@ -25,6 +25,13 @@ function next_step()
 		fi
 		if [ -z "$NAME" ] ; then
 			NAME="${1}"
+			# Perhaps we can do some parameter substitution here
+			if [ "${2:-}" ] ; then
+				NAME="$NAME :$2:"
+			fi
+			if [ "${3:-}" ] ; then
+				NAME="$NAME :$3:"
+			fi
 		fi
 		if [ "$BLOCK" ] ; then
 			BLOCK_YAML="        - block: '${BLOCK}'
@@ -95,6 +102,46 @@ function get_artifact()
                 ln -s -f "${DIR}/artifacts/${FILE}" .
         fi
 }
+
+# Metadata can be passed between build steps
+# If using buildkite then the buildkite agent metadata is used
+# If building locally then metadata.json is used
+function get_metadata()
+{
+        local META="${1}"
+        if [ "$BUILDKITE_AGENT_ACCESS_TOKEN" ] ; then
+                buildkite-agent meta-data get "$META"
+        else
+                if [ -f "${DIR}/metadata.json" ] ; then
+                        jq -r ".$META" < "${DIR}/metadata.json"
+                fi
+        fi
+}
+
+function set_metadata()
+{
+        local FILE="${DIR}/metadata.json"
+        local META="${1}"
+        local VALUE="${2}"
+        if [ "$BUILDKITE_AGENT_ACCESS_TOKEN" ] ; then
+                buildkite-agent meta-data set "$META" "$VALUE"
+        else
+                if [ -f "$FILE" ] ; then
+                        TMP=$(mktemp)
+                        jq ". |= .+ {\"$META\": \"$VALUE\"}" < "$FILE" > "$TMP" && \
+                            cat "$TMP" > "$FILE"
+                        rm -f "$TMP"
+                else
+                        echo "{\"$META\": \"$VALUE\"}" | jq . > "$FILE"
+                fi
+        fi
+}
+
+function clear_metadata()
+{
+        rm -rf metadata.json
+}
+
 
 
 echo "--- build environment"
