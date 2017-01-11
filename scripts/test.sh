@@ -15,7 +15,7 @@ BITS=$2
 FILE=dd${TARGET}${BITS}.exe
 get_artifact $FILE
 
-echo "This is a test" | ./$FILE
+scripts/run_tests.sh $FILE
 
 #next_step test $TARGET ${BITS}
 if [ "$TARGET" = "debug" ] ; then
