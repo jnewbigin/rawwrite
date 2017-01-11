@@ -13,6 +13,7 @@ BITS="32 64"
 echo "Building dd version $APP_VERSION for $BITS"
 
 set_metadata version "$APP_VERSION"
+set_metadata bits "$BITS"
 
 for BIT in $BITS ; do
 	next_step build debug $BIT

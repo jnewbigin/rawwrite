@@ -3,8 +3,6 @@
 
 set -e -u -o pipefail
 
-set -x
-
 . $(dirname $0)/../.buildkite/env.sh
 
 if [ "$1" == "package" ] ; then

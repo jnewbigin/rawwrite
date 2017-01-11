@@ -5,15 +5,19 @@ set -e -u -o pipefail
 
 . $(dirname $0)/../.buildkite/env.sh
 
-set +e
-FILE1=ddrelease32.exe
-FILE2=ddrelease64.exe
-get_artifact $FILE1
-get_artifact $FILE2
+VERSION=$(get_metadata version)
+BITS=$(get_metadata bits)
 
-if [ -f "$FILE1" -a -f "$FILE2" ] ; then
-	echo "I should package $FILE1 and $FILE2"
-	next_step publish
-else
-	echo "Not all the artifacts are ready yet"
-fi
+set +e
+
+for BIT in $BITS ; do
+	FILENAME=ddrelease${BIT}.exe
+	( set +e ; get_artifact $FILENAME )
+	if [ ! -f "$FILENAME" ] ; then
+		echo "Artifact $FILENAME is not ready yet"
+		exit 0
+	fi
+done
+
+echo "I should package $BITS as $VERSION"
+next_step publish
