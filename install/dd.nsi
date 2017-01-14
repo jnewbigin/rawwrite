@@ -16,15 +16,6 @@ InstallDir "$PROGRAMFILES\Chrysocome"
 SetCompressor /SOLID lzma
 #!finalize '"C:\apps\WinDDK\7600.16385.1\bin\x86\SignTool.exe" sign /v /s PrivateCertStore /n chrysocome.net(Test) "%1"'
 
-VIProductVersion "${PRODUCT_VER}.0.0"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${PRODUCT_NAME}"
-;VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" ""
-VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Chrysocome"
-;VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" ""
-VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "John Newbigin. GPL"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${PRODUCT_NAME} Installer"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VER}.0.0"
-
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "..\Copying.txt"
 !insertmacro MUI_PAGE_COMPONENTS
@@ -38,10 +29,19 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VER}.0.0"
 
 !insertmacro MUI_LANGUAGE "English"
 
+VIProductVersion "${PRODUCT_VER}.0.0"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "${PRODUCT_NAME}"
+;VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" ""
+VIAddVersionKey /LANG=${LANG_ENGLISH} "CompanyName" "Chrysocome"
+;VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalTrademarks" ""
+VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "John Newbigin. GPL"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "${PRODUCT_NAME} Installer"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VER}.0.0"
+
 
 Section "Main Program Files" SecMain
 	SetOutPath $INSTDIR
-	File "..\artifacts\dd.exe"
+	File "..\dd.exe"
 	File "..\ddchanges.txt"
 
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
