@@ -13,7 +13,7 @@ DD=$1
 echo "This is a test" | $DD
 
 # Random number quality
-$DD if=/dev/random bs=1M count=10 | $ENT
+MSYS_NO_PATHCONV=1 $DD if=/dev/random bs=1M count=10 | $ENT
 
 # Print data only to stdout
 echo "This is a test" | $DD 2> /dev/null
