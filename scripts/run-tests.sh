@@ -9,6 +9,10 @@ ENT=${ENT:-/c/tools/ent.exe}
 
 DD=$1
 
+# The debug versions have heap debugging on by default
+# We don't want to see those reports yet
+export HEAPTRC=disabled
+
 # Basic execution test
 echo "This is a test" | $DD
 
