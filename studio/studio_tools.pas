@@ -19,6 +19,17 @@ uses classes;
 {$ENDIF}
 
 const AppVersion = '1.0beta1';
+{$IFDEF WIN32}
+const AppPlatform = 'WIN32';
+{$DEFINE WINDOWS}
+{$ELSE}
+{$IFDEF WIN64}
+const AppPlatform = 'WIN64';
+{$DEFINE WINDOWS}
+{$ELSE}
+const AppPlatform = 'unknown';
+{$ENDIF}
+{$ENDIF}
 
 type
 ProgressEvent = function (Progress : Int64; Error : DWORD) : Boolean of object;

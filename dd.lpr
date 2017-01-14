@@ -854,7 +854,7 @@ begin
    Exitcode := 0;
    //UseWriteln;
    UseStdError;
-   Log('rawwrite dd for windows version ' + AppVersion + '.');
+   Log('rawwrite dd for windows version ' + AppVersion + ' ' + AppPlatform + '.');
    Log('Written by John Newbigin <jnewbigin@chrysocome.net>');
    Log('This program is covered by terms of the GPL Version 2.');
    Log('');
