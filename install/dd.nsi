@@ -41,7 +41,7 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "${PRODUCT_VER}.0.0"
 
 Section "Main Program Files" SecMain
 	SetOutPath $INSTDIR
-	File "..\dd.exe"
+	File /oname=dd.exe "..\ddrelease64.exe"
 	File "..\ddchanges.txt"
 
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
