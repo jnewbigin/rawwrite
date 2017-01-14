@@ -142,6 +142,10 @@ function clear_metadata()
         rm -rf metadata.json
 }
 
+function inline_image()
+{
+  printf '\033]1338;url='"$1"';alt='"${2:-}"'\a\n'
+}
 
 
 echo "--- build environment"
@@ -150,7 +154,7 @@ echo PWD=`pwd`
 set
 
 # Make a short version of $BUILDKITE_MESSAGE
-SHORT_MESSAGE=$(echo "$BUILDKITE_MESSAGE" | head -1)
+SHORT_MESSAGE=$(echo "${BUILDKITE_MESSAGE:-}" | head -1)
 
 echo "+++ build output"
 
