@@ -20,4 +20,8 @@ for BIT in $BITS ; do
 done
 
 echo "I should package $BITS as $VERSION"
+
+/c/Program\ Files\ \(x86\)/NSIS/makensis install/dd.nsi
+put_artifact install/dd-1.0-install.exe
+
 next_step publish
