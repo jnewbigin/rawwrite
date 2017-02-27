@@ -1,4 +1,26 @@
-TODO: notrunc feature
+TODO
+====
+- notrunc feature (the default on UNIX seems unfriendly, do we want to do the same?)
+  dd for windows (incorrectly) has notrunc enabled by default. Perhaps we should
+  implement trunc for people who want it
+- AWS init mode - use case 1 - EBS Restored from snapshot
+  - http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/EBSPerformance.html
+There is a significant increase in latency when you first access each block of data on a new EBS volume that was restored from a snapshot. You can avoid this performance hit by accessing each block prior to putting the volume into production. This process is called initialization (formerly known as pre-warming). For more information, see http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ebs-initialize.html
+
+C:\>dd if=\\.\PHYSICALDRIVEn of=/dev/null bs=1M --progress --size
+
+- AWS init mode - use case 2 - instance storage
+http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/disk-performance.html
+Because of the way that Amazon EC2 virtualizes disks, the first write to any location on most instance store volumes performs more slowly than subsequent writes. For most applications, amortizing this cost over the lifetime of the instance is acceptable. However, if you require high disk performance, we recommend that you initialize your drives by writing once to every drive location before production use.
+http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/InstanceStorage.html
+
+
+1.0beta1
+========
+- Now built with lazarus
+- 32 bit and 64 bit versions available
+- Built with buildkite & AWS EC2 build server
+- CVS source converted and imported into GitHub
 
 0.6beta3
 ========
