@@ -1,0 +1,202 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Windows Server Scaling Group",
+  "Parameters": {
+    "DesiredCapacity": {
+      "Type": "Number",
+      "Default": "1"
+    },
+    "InstanceAMI": {
+      "Type": "AWS::EC2::Image::Id",
+      "Default": "ami-ee576c8d"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Description": "Instance Type",
+      "Default": "m3.medium"
+    },
+    "SpotPrice": {
+      "Type": "String",
+      "Default": "0.08"
+    },
+    "SubnetIds": {
+      "Type": "String",
+      "Default": "cloud-private"
+    },
+    "VpcId": {
+      "Type": "String",
+      "Default": "cloud-vpc"
+    }
+  },
+  "Resources": {
+
+      "ServerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "Path": "/",
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sts:AssumeRole"
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              }
+            }
+          ]
+        },
+        "Policies": [ {
+          "PolicyName": "ReadBucket",
+          "PolicyDocument": {
+            "Version" : "2012-10-17",
+          "Statement": [
+
+            {
+              "Effect": "Allow",
+              "Action": ["s3:ListBucket"],
+              "Resource": ["arn:aws:s3:::top3-deploy"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:GetObject"
+              ],
+              "Resource": ["arn:aws:s3:::top3-deploy/*"]
+            }
+          ]
+          } } ]
+      }
+    },
+    "ServerInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "ServerRole"
+          }
+        ]
+      }
+    },
+    "ASG": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "Cooldown": 300,
+        "DesiredCapacity": {
+          "Ref": "DesiredCapacity"
+        },
+        "HealthCheckGracePeriod": 300,
+        "HealthCheckType": "EC2",
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfig"
+        },
+        "MaxSize": 1,
+        "MinSize": 0,
+
+        "Tags": [
+          {
+            "Key": "Name",
+            "PropagateAtLaunch": true,
+            "Value": "Windows Server ASG"
+          }
+        ],
+        "VPCZoneIdentifier": [ {
+          "Fn::ImportValue" : {"Ref": "SubnetIds"}
+        } ]
+      }
+    },
+    "CPUAlarmLow": {
+     "Type": "AWS::CloudWatch::Alarm",
+     "Properties": {
+        "AlarmDescription": "Scale-down if CPU < 10% for 60 minutes",
+        "MetricName": "CPUUtilization",
+        "Namespace": "AWS/EC2",
+        "Statistic": "Average",
+        "Period": "300",
+        "EvaluationPeriods": "12",
+        "Threshold": "10",
+        "AlarmActions": [ { "Ref": "ScaleDownPolicy" } ],
+        "Dimensions": [
+          {
+            "Name": "AutoScalingGroupName",
+            "Value": { "Ref": "ASG" }
+          }
+        ],
+        "ComparisonOperator": "LessThanThreshold"
+      }
+    },
+
+    "ScaleDownPolicy" : {
+       "Type" : "AWS::AutoScaling::ScalingPolicy",
+       "Properties" : {
+          "AdjustmentType" : "ChangeInCapacity",
+          "AutoScalingGroupName" : { "Ref": "ASG" },
+          "ScalingAdjustment" : "-1"
+       }
+    },
+    "SecurityGroupRDP": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow internal RDP",
+        "SecurityGroupIngress": [
+          {
+            "CidrIp": "192.168.0.0/16",
+            "FromPort": "3389",
+            "IpProtocol": "tcp",
+            "ToPort": "3389"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Windows Server Security Group"
+          }
+        ],
+        "VpcId": { "Fn::ImportValue" : {"Ref": "VpcId"} }
+      }
+    },
+
+    "LaunchConfig": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": {
+          "Ref": "InstanceAMI"
+        },
+        "InstanceMonitoring": "true",
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+	"SpotPrice": { "Ref": "SpotPrice" },
+	"KeyName": "amazon-jnewbigin",
+        "SecurityGroups": [{
+		"Ref": "SecurityGroupRDP"
+        }],
+	"IamInstanceProfile": { "Ref": "ServerInstanceProfile" },
+
+        "UserData": {
+      "Fn::Base64": {
+        "Fn::Join" : [ "\n", [
+"<powershell>",
+"Read-S3Object -BucketName top3-deploy -Key lazarus/deploy.ps1 -File c:\\deploy.ps1",
+"& c:\\deploy.ps1",
+"</powershell>"
+        ] ]
+      }
+    }
+      }
+
+    }
+  },
+  "Outputs": {
+    "ASG": {
+      "Value": {
+        "Ref": "ASG"
+      }
+    }
+  }
+}
+    
