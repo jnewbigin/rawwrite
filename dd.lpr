@@ -11,6 +11,7 @@ uses
   Windows,
   Classes,
   Filectrl,
+  Variants, ComObj,
   Native in 'Native.pas',
   volume in 'volume.pas',
   WinBinFile in 'WinBinFile.pas',
@@ -486,7 +487,27 @@ var
    Buffer : String;
    VolumeLetter : array ['a'..'z'] of String;
    MountCount : Integer;
+
+   FSWbemLocator : OLEVariant;
+   FWMIService   : OLEVariant;
+   FWbemObjectSet: OLEVariant;
+   FWbemObject   : OLEVariant;
+   oEnum         : IEnumvariant;
+   iValue        : LongWord;
 begin
+   FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+   FWMIService   := FSWbemLocator.ConnectServer('localhost', 'root\CIMV2', '', '');
+   FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM MSFT_PhysicalDisk','WQL',wbemFlagForwardOnly);
+     //get the enumerator
+     oEnum         := IUnknown(FWbemObjectSet._NewEnum) as IEnumVariant;
+     //traverse the data
+     while oEnum.Next(1, FWbemObject, iValue) = 0 do
+     begin
+       Writeln(Format('Caption    %s',[FWbemObject.Caption]));// String
+       Writeln('');
+       FWbemObject:=Unassigned;
+     end;
+
    // search for block devices...
    if OSis95 then
    begin
