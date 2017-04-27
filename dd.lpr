@@ -300,7 +300,19 @@ var
       VolumeType := GetAWSVolumeType(DriveNo);
       if Length(VolumeType) > 0 then
       begin
-         Log('  AWS ' + VolumeType + ' ' + GetAWSVolumeName(DriveNo));
+         if VolumeType = 'ROOT' then
+         begin
+            VolumeType := 'Root Volume';
+         end
+         else if VolumeType = 'INSTANCE' then
+         begin
+            VolumeType := 'Instance Storage Volume';
+         end
+         else if VolumeType = 'EBS' then
+         begin
+            VolumeType := 'EBS Volume'
+         end;
+         Log('  AWS ' + VolumeType + ' attached to ' + GetAWSVolumeName(DriveNo));
       end;
    end;
 
@@ -506,8 +518,6 @@ var
    MountCount : Integer;
 
 begin
-   FindAWSBlockDevices;
-
    // search for block devices...
    if OSis95 then
    begin

@@ -27,13 +27,24 @@ function GetAWSVolumeType(DiskNumber : Integer) : String;
 var
    DiskNo : String;
 begin
-    DiskNo := IntToStr(DiskNumber);
-    Result := VolumeType.Values[DiskNo];
+  if not Assigned(VolumeType) then
+  begin
+    FindAWSBlockDevices;
+  end;
+  DiskNo := IntToStr(DiskNumber);
+  Result := VolumeType.Values[DiskNo];
 end;
 
 function GetAWSVolumeName(DiskNumber : Integer) : String;
+var
+   DiskNo : String;
 begin
-
+  if not Assigned(VolumeName) then
+  begin
+    FindAWSBlockDevices;
+  end;
+  DiskNo := IntToStr(DiskNumber);
+  Result := VolumeName.Values[DiskNo];
 end;
 
 // Use WMI to try and work out if this is an AWS/Xen instance
@@ -78,11 +89,11 @@ var
    Id         : Integer;
    DiskNumber : String;
 begin
-    if IsAWS then
-    begin
-       VolumeType := TStringList.Create;
-       VolumeName := TStringList.Create;
+  VolumeType := TStringList.Create;
+  VolumeName := TStringList.Create;
 
+  if IsAWS then
+    begin
       FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
       FWMIService   := FSWbemLocator.ConnectServer('localhost', 'Root\Microsoft\Windows\Storage', '', '');
       FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM MSFT_PhysicalDisk','WQL');
