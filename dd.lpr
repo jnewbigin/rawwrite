@@ -293,6 +293,17 @@ var
    VolumeLink : String;
    Size       : Int64;
 
+   procedure PrintAWSDetails(DriveNo : Integer);
+   var
+      VolumeType : String;
+   begin
+      VolumeType := GetAWSVolumeType(DriveNo);
+      if Length(VolumeType) > 0 then
+      begin
+         Log('  AWS ' + VolumeType + ' ' + GetAWSVolumeName(DriveNo));
+      end;
+   end;
+
    function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
       h : THandle;
@@ -450,6 +461,11 @@ begin
                      begin
                         Log('  size is ' + IntToStr(Size) + ' bytes');
                      end;
+                     // Check for AWS data
+                     if PartNo = 0 then
+                     begin
+                        PrintAWSDetails(DriveNo)
+                     end
                   end
                end;
             end

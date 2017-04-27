@@ -13,8 +13,55 @@ uses
   ActiveX;
 
 procedure FindAWSBlockDevices;
+function IsAWS : Boolean;
+function GetAWSVolumeType(DiskNumber : Integer) : String;
+function GetAWSVolumeName(DiskNumber : Integer) : String;
 
 implementation
+
+var
+   VolumeType : TStringList;
+   VolumeName : TStringList;
+
+function GetAWSVolumeType(DiskNumber : Integer) : String;
+var
+   DiskNo : String;
+begin
+    DiskNo := IntToStr(DiskNumber);
+    Result := VolumeType.Values[DiskNo];
+end;
+
+function GetAWSVolumeName(DiskNumber : Integer) : String;
+begin
+
+end;
+
+// Use WMI to try and work out if this is an AWS/Xen instance
+function IsAWS : Boolean;
+var
+   FSWbemLocator : OLEVariant;
+   FWMIService   : OLEVariant;
+   FWbemObjectSet: OLEVariant;
+   FWbemObject   : OLEVariant;
+   oEnum         : IEnumvariant;
+   iValue        : LongWord;
+   Version       : String;
+begin
+    Result := False;
+    FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+    FWMIService   := FSWbemLocator.ConnectServer('localhost', 'Root\cimv2', '', '');
+    FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM win32_bios','WQL');
+    //get the enumerator
+    oEnum         := IUnknown(FWbemObjectSet._NewEnum) as IEnumVariant;
+    //traverse the data
+    while oEnum.Next(1, FWbemObject, iValue) = 0 do
+    begin
+      if EndsWith(FWbemObject.SMBIOSBIOSVersion, 'amazon', version) then
+      begin
+        Result := true;
+      end
+    end
+end;
 
 procedure FindAWSBlockDevices;
 var
@@ -29,58 +76,60 @@ var
    Target   : String;
    IdStr      : String;
    Id         : Integer;
-   DiskNumber : Integer;
-   DiskType : String;
-   DiskName : String;
+   DiskNumber : String;
 begin
-  FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
-  FWMIService   := FSWbemLocator.ConnectServer('localhost', 'Root\Microsoft\Windows\Storage', '', '');
-  FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM MSFT_PhysicalDisk','WQL');
-    //get the enumerator
-    oEnum         := IUnknown(FWbemObjectSet._NewEnum) as IEnumVariant;
-    //traverse the data
-    while oEnum.Next(1, FWbemObject, iValue) = 0 do
+    if IsAWS then
     begin
-      if (FWbemObject.BusType = 1) {SCSI} and (FWbemObject.Manufacturer = 'AWS') then
-      begin
-        Location := TStringList.Create;
-        Location.StrictDelimiter := True;
-        Location.Delimiter := ':';
-        Location.DelimitedText := FWbemObject.PhysicalLocation;
-        Target := Trim(Location[3]);
-        if StartsWith(Target, 'Target ', IdStr) then
+       VolumeType := TStringList.Create;
+       VolumeName := TStringList.Create;
+
+      FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+      FWMIService   := FSWbemLocator.ConnectServer('localhost', 'Root\Microsoft\Windows\Storage', '', '');
+      FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM MSFT_PhysicalDisk','WQL');
+        //get the enumerator
+        oEnum         := IUnknown(FWbemObjectSet._NewEnum) as IEnumVariant;
+        //traverse the data
+        while oEnum.Next(1, FWbemObject, iValue) = 0 do
         begin
-          DiskNumber := StrToInt(FWbemObject.DeviceId);
-          Id := StrToIntDef(IdStr, -1);
-          if Id >= 0 then
+          if (FWbemObject.BusType = 1) {SCSI} and (FWbemObject.Manufacturer = 'AWS') then
           begin
-            DiskType := 'UNKNOWN';
-            // We got it at last
-            if Id = 0 then
+            Location := TStringList.Create;
+            Location.StrictDelimiter := True;
+            Location.Delimiter := ':';
+            Location.DelimitedText := FWbemObject.PhysicalLocation;
+            Target := Trim(Location[3]);
+            if StartsWith(Target, 'Target ', IdStr) then
             begin
-               DiskName := '/dev/sda1';
-               DiskType := 'ROOT';
-            end
-            else if Id <= 25 then
-            begin
-              DiskName := 'xvd' + Chr(Id + Ord('a'));
-              DiskType := 'EBS';
-            end
-            else if (Id >= 78) and (Id <= 89) then
-            begin
-              DiskName :=  'xvdc' + Chr(id - 78 + Ord('a'));
-              DiskType := 'INSTANCE';
+              DiskNumber := FWbemObject.DeviceId;
+              Id := StrToIntDef(IdStr, -1);
+              if Id >= 0 then
+              begin
+                // We got it at last
+                if Id = 0 then
+                begin
+                   VolumeName.Values[DiskNumber] := '/dev/sda1';
+                   VolumeType.Values[DiskNumber] := 'ROOT';
+                end
+                else if Id <= 25 then
+                begin
+                  VolumeName.Values[DiskNumber] := 'xvd' + Chr(Id + Ord('a'));
+                  VolumeType.Values[DiskNumber] := 'EBS';
+                end
+                else if (Id >= 78) and (Id <= 89) then
+                begin
+                  VolumeName.Values[DiskNumber] :=  'xvdc' + Chr(id - 78 + Ord('a'));
+                  VolumeType.Values[DiskNumber] := 'INSTANCE';
+                end;
+              end;
             end;
+
+           // DiskNumber := FWbemObject.Number;
+            Location.Free;
+
           end;
-          Writeln(IntToStr(DiskNumber) + ' ' + IdStr + ' ' + DiskName + ' ' + DiskType);
-        end;
-
-       // DiskNumber := FWbemObject.Number;
-        Location.Free;
-
-      end;
-      FWbemObject:=Unassigned;
-    end;
+          FWbemObject:=Unassigned;
+        end
+    end
 end;
 
 end.
