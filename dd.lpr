@@ -11,6 +11,7 @@ uses
   Windows,
   Classes,
   Filectrl,
+  Aws,
   Native in 'Native.pas',
   volume in 'volume.pas',
   WinBinFile in 'WinBinFile.pas',
@@ -292,6 +293,29 @@ var
    VolumeLink : String;
    Size       : Int64;
 
+   procedure PrintAWSDetails(DriveNo : Integer);
+   var
+      VolumeType : String;
+   begin
+      VolumeType := GetAWSVolumeType(DriveNo);
+      if Length(VolumeType) > 0 then
+      begin
+         if VolumeType = 'ROOT' then
+         begin
+            VolumeType := 'Root Volume';
+         end
+         else if VolumeType = 'INSTANCE' then
+         begin
+            VolumeType := 'Instance Storage Volume';
+         end
+         else if VolumeType = 'EBS' then
+         begin
+            VolumeType := 'EBS Volume'
+         end;
+         Log('  AWS ' + VolumeType + ' attached to ' + GetAWSVolumeName(DriveNo));
+      end;
+   end;
+
    function TestDevice(DeviceName : String; var Description : String) : Boolean;
    var
       h : THandle;
@@ -449,6 +473,11 @@ begin
                      begin
                         Log('  size is ' + IntToStr(Size) + ' bytes');
                      end;
+                     // Check for AWS data
+                     if PartNo = 0 then
+                     begin
+                        PrintAWSDetails(DriveNo)
+                     end
                   end
                end;
             end
@@ -473,6 +502,7 @@ begin
    end;
 end;
 
+
 procedure PrintBlockDevices(Filter : String);
 var
    h : THandle;
@@ -486,6 +516,7 @@ var
    Buffer : String;
    VolumeLetter : array ['a'..'z'] of String;
    MountCount : Integer;
+
 begin
    // search for block devices...
    if OSis95 then
