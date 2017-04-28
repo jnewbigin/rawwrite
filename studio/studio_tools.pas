@@ -662,7 +662,10 @@ begin
             SetLength(Buffer, ThisBlock);
             if MagicZero then
             begin
-               FillMemory(PChar(Buffer), ThisBlock, 0);
+               if i = 0 then
+               begin
+                  FillMemory(PChar(Buffer), ThisBlock, 0);
+               end;
                Actual := ThisBlock;
             end
             else if MagicRandom then
