@@ -441,7 +441,7 @@ begin
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
-      if InFile = '/dev/zero' then
+      if (InFile = '/dev/zero') or (InFile = 'DEVZERO') then
       begin
          MagicZero := True;
       end
