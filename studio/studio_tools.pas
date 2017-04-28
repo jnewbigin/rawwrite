@@ -656,6 +656,10 @@ begin
                   // we need to recuce the read size...
                   ThisBlock := InSize - (Skip + (i * BlockSize));
                   //Log('Trimming the last block from ' + IntToStr(BlockSize) + ' down to ' + IntToStr(ThisBlock));
+                  if ThisBlock = 0 then
+                  begin
+                     break; // All done.
+                  end;
                end;
             end;
             //Log('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
