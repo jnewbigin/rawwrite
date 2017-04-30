@@ -385,7 +385,7 @@ var
    OutBinFile  : TBinaryFile;
 
    InSize : Int64;
-//   OutSize : Int64;
+   OutSize : Int64;
    ThisBlock : Int64;
 
    MagicZero   : Boolean;
@@ -429,6 +429,7 @@ begin
    InBinFile  := nil;
    InSize     := 0;
    OutBinFile := nil;
+   OutSize    := 0;
 (*   In95Disk   := nil;
    Out95Disk  := nil;
    Out95SectorCount := 0;
@@ -440,7 +441,7 @@ begin
    // open the files....
    InBinFile := TBinaryFile.Create;
    try
-      if InFile = '/dev/zero' then
+      if (InFile = '/dev/zero') or (InFile = 'DEVZERO') then
       begin
          MagicZero := True;
       end
@@ -571,6 +572,11 @@ begin
                if h <> INVALID_HANDLE_VALUE then
                begin
                   OutBinFile.AssignHandle(h);
+                  if StopType then
+                  begin
+                     OutSize := GetSize(h);
+                  end;
+
                end
                else
                begin
@@ -617,6 +623,26 @@ begin
             Callback(BytesOut, Windows.GetLastError);
          end;
 
+         // Manage the InSize and OutSize
+         // if we have one or the other, make sure we only use the mimimum
+         if StopType then
+         begin
+            if InSize > 0 then
+            begin
+               if (OutSize > 0) and (OutSize < InSize) then
+               begin
+                  InSize := OutSize;
+                  //Log('Clamping InSize at OutSize ' + IntToStr(OutSize));
+               end;
+            end
+            else if OutSize > 0 then
+            begin
+               // OutSize and no InSize
+               InSize := OutSize;
+               //Log('Forcing InSize to ' + IntToStr(OutSize));
+            end;
+         end;
+
          i := 0;
          while (i < Count) or (Count = -1) do
          begin
@@ -629,19 +655,27 @@ begin
                begin
                   // we need to recuce the read size...
                   ThisBlock := InSize - (Skip + (i * BlockSize));
+                  //Log('Trimming the last block from ' + IntToStr(BlockSize) + ' down to ' + IntToStr(ThisBlock));
+                  if ThisBlock = 0 then
+                  begin
+                     break; // All done.
+                  end;
                end;
             end;
             //Log('Reading block ' + IntToStr(i) + ' len = ' + IntToStr(BlockSize));
-            SetLength(Buffer, BlockSize);
+            SetLength(Buffer, ThisBlock);
             if MagicZero then
             begin
-               FillMemory(PChar(Buffer), BlockSize, 0);
-               Actual := BlockSize;
+               if i = 0 then
+               begin
+                  FillMemory(PChar(Buffer), ThisBlock, 0);
+               end;
+               Actual := ThisBlock;
             end
             else if MagicRandom then
             begin
-               FillBuffer_MT19937(PChar(Buffer), BlockSize);
-               Actual := BlockSize;
+               FillBuffer_MT19937(PChar(Buffer), ThisBlock);
+               Actual := ThisBlock;
             end
             else
             begin
