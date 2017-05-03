@@ -463,6 +463,10 @@ var
    R : DWORD;
 begin
    Distance.QuadPart := Index;
+   {$PUSH}
+   {$RANGECHECKS OFF}
+   R := SetFilePointer(F, Distance.LowPart, @Distance.HighPart, FILE_BEGIN);
+   {$POP}
    R := SetFilePointer(F, Distance.LowPart, @Distance.HighPart, FILE_BEGIN);
    if R = $ffffffff then
    begin
