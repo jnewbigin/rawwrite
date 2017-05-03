@@ -16,6 +16,7 @@ procedure FindAWSBlockDevices;
 function IsAWS : Boolean;
 function GetAWSVolumeType(DiskNumber : Integer) : String;
 function GetAWSVolumeName(DiskNumber : Integer) : String;
+procedure OnlineDisk(DiskNumber : Integer);
 
 implementation
 
@@ -140,6 +141,33 @@ begin
           end;
           FWbemObject:=Unassigned;
         end
+    end
+end;
+
+procedure OnlineDisk(DiskNumber : Integer);
+var
+   FSWbemLocator : OLEVariant;
+   FWMIService   : OLEVariant;
+   FWbemObjectSet: OLEVariant;
+   FWbemObject   : OLEVariant;
+   oEnum         : IEnumvariant;
+   iValue        : LongWord;
+   Version       : String;
+begin
+
+    FSWbemLocator := CreateOleObject('WbemScripting.SWbemLocator');
+    FWMIService   := FSWbemLocator.ConnectServer('localhost', 'Root\Microsoft\Windows\Storage', '', '');
+    FWbemObjectSet:= FWMIService.ExecQuery('SELECT * FROM MSFT_Disk','WQL');
+    //get the enumerator
+    oEnum         := IUnknown(FWbemObjectSet._NewEnum) as IEnumVariant;
+    //traverse the data
+    while oEnum.Next(1, FWbemObject, iValue) = 0 do
+    begin
+      if StrToInt(FWbemObject.Number) = DiskNumber then
+      begin
+        FWbemObject.Online();
+        FWbemObject.SetAttributes(False); // Set the ReadOnly attribute
+      end
     end
 end;
 
