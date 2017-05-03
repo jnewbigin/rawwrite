@@ -474,7 +474,7 @@ begin
          // do a native open
          Value := '\' + Value;
          //Log('ntopen ' + Value);
-         h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, 0);
+         h := NTCreateFile(PChar(Value), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_RANDOM_ACCESS, FILE_SHARE_READ);
          if h <> INVALID_HANDLE_VALUE then
          begin
             InBinFile.AssignHandle(h);
@@ -485,7 +485,7 @@ begin
          end
          else
          begin
-            ShowError('native opening input file');
+            ShowError('native open input file');
             exit;
          end;
       end
