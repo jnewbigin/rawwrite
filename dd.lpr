@@ -39,6 +39,7 @@ var
    BlockUnit    : String;
    Progress     : Boolean;
    CheckSize    : Boolean;
+   Online       : Boolean;
    Unmounts     : TStringList;
    DeviceFilter : String;
    Onocreat     : Boolean;
@@ -975,6 +976,11 @@ begin
       begin
          CheckSize := True;
       end
+      else if Parameters[i] = '--online' then
+      begin
+         Online := True;
+         Action := 'online';
+      end
       else if StartsWith(Parameters[i], 'count=', Value) then
       begin
          Count := GetBlockSize(Value);
@@ -1145,6 +1151,10 @@ begin
    else if Action = 'unmount' then
    begin
       // dummy target
+   end
+   else if Action = 'online' then
+   begin
+      OnlineDisk(2);
    end
    else if Action = '' then
    begin
