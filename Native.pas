@@ -437,7 +437,12 @@ begin
 						NIL);
 
 //   R := NtOpenFile(@Result, {FILE_GENERIC_READ or SYNCHRONIZE} dwDesiredAccess, @ObjectAttributes, @Status, 0, FILE_SYNCHRONOUS_IO_NONALERT{FILE_NON_DIRECTORY_FILE});
-   R := NtOpenFile(@Result, dwDesiredAccess or SYNCHRONIZE, @ObjectAttributes, @Status, 0, FILE_SYNCHRONOUS_IO_NONALERT);
+   R := NtOpenFile(@Result,
+                           dwDesiredAccess or SYNCHRONIZE,
+                           @ObjectAttributes,
+                           @Status,
+                           dwShareMode,
+                           FILE_SYNCHRONOUS_IO_NONALERT);
 {   Debug('Status = 0x' + IntToHex(R, 8), DebugOff);
    Debug('Status.Status = 0x' + IntToHex(Status.Status, 8), DebugOff);
    Debug('Status.Information = 0x' + IntToHex(Status.Information, 8), DebugOff);}
