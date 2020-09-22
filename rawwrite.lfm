@@ -1,0 +1,633 @@
+object MainForm: TMainForm
+  Left = 948
+  Height = 367
+  Top = 409
+  Width = 380
+  BorderStyle = bsSingle
+  Caption = 'RawWrite'
+  ClientHeight = 367
+  ClientWidth = 380
+  Color = clBtnFace
+  DesignTimePPI = 101
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'MS Sans Serif'
+  Icon.Data = {
+    B60B00000000010002002020100000000000E802000026000000202000000000
+    0000A80800000E03000028000000200000004000000001000400000000008002
+    0000000000000000000000000000000000000000000000008000008000000080
+    800080000000800080008080000080808000C0C0C0000000FF0000FF000000FF
+    FF00FF000000FF00FF00FFFF0000FFFFFF000000000000000000000000000000
+    00000000000033330000000013330000000000003333BBB31000000033BB3300
+    0000003BBBBBBBBB100000003BBBBBB00000000BBBBBBBBBFFFFFF003BBBBBBB
+    B000000BBBBBBBB3FFFFFFFF13BBBBBBB000000BBBBBBBB00FFFFFFF83BBBBBB
+    0000000BBBBBBB00FFFFFFFF8B333BB00000000003BBBB0FFFFFFFFF8B3003B0
+    0000000000BBB0FFF8FFFFFFFB0000B000000000000B0FFFF8FFFFFFFF000700
+    0000000000000FFFFFFFFFFFFF0000000000000000000FFFF8FFFFFFFF000000
+    0000000000000FFFFFFFFFFFFF0000000000000000000FFFFFFFFFFFFF000000
+    00000000000000FFFFFFFFFFFF000000000000000000008FFFFFFFFF80000000
+    0000000000000007FFFFFF88F0000000000000000000000FFFFFFFFF00000000
+    0000000000000007FFFFFFFF000000000000000000000000F888FFFF00000000
+    0000000000000000883388F00000000000000000000000000BB3338070000000
+    00000000000000003BBBB3B00000000000000000000000000BBBBB0000000000
+    0000000000000000F03300F0000000000000000000000000F00077F000000000
+    0000000000000000370078000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    000000000000000000000000000000000000FFDFF9FFFE0FF07FF000003FC000
+    001FE0000007E0000007E000000FE000001FF800001FFC00001FFC00001FFC00
+    001FFC00001FFE00001FFF00003FFF00003FFF00003FFF80007FFF8000FFFFC0
+    01FFFFE001FFFFF003FFFFF003FFFFF007FFFFF007FFFFE007FFFFE007FFFFE0
+    07FFFFE007FFFFE007FFFFF00FFFFFF81FFF2800000020000000400000000100
+    0800000000008004000000000000000000000000000000000000000000000000
+    80000080000000808000800000008000800080800000C0C0C000C0DCC000F0CA
+    A60004040400080808000C0C0C0011111100161616001C1C1C00222222002929
+    2900555555004D4D4D004242420039393900807CFF005050FF009300D600FFEC
+    CC00C6D6EF00D6E7E70090A9AD000000330000006600000099000000CC000033
+    00000033330000336600003399000033CC000033FF0000660000006633000066
+    6600006699000066CC000066FF00009900000099330000996600009999000099
+    CC000099FF0000CC000000CC330000CC660000CC990000CCCC0000CCFF0000FF
+    660000FF990000FFCC00330000003300330033006600330099003300CC003300
+    FF00333300003333330033336600333399003333CC003333FF00336600003366
+    330033666600336699003366CC003366FF003399000033993300339966003399
+    99003399CC003399FF0033CC000033CC330033CC660033CC990033CCCC0033CC
+    FF0033FF330033FF660033FF990033FFCC0033FFFF0066000000660033006600
+    6600660099006600CC006600FF00663300006633330066336600663399006633
+    CC006633FF00666600006666330066666600666699006666CC00669900006699
+    330066996600669999006699CC006699FF0066CC000066CC330066CC990066CC
+    CC0066CCFF0066FF000066FF330066FF990066FFCC00CC00FF00FF00CC009999
+    000099339900990099009900CC009900000099333300990066009933CC009900
+    FF00996600009966330099336600996699009966CC009933FF00999933009999
+    6600999999009999CC009999FF0099CC000099CC330066CC660099CC990099CC
+    CC0099CCFF0099FF000099FF330099CC660099FF990099FFCC0099FFFF00CC00
+    000099003300CC006600CC009900CC00CC0099330000CC333300CC336600CC33
+    9900CC33CC00CC33FF00CC660000CC66330099666600CC669900CC66CC009966
+    FF00CC990000CC993300CC996600CC999900CC99CC00CC99FF00CCCC0000CCCC
+    3300CCCC6600CCCC9900CCCCCC00CCCCFF00CCFF0000CCFF330099FF6600CCFF
+    9900CCFFCC00CCFFFF00CC003300FF006600FF009900CC330000FF333300FF33
+    6600FF339900FF33CC00FF33FF00FF660000FF663300CC666600FF669900FF66
+    CC00CC66FF00FF990000FF993300FF996600FF999900FF99CC00FF99FF00FFCC
+    0000FFCC3300FFCC6600FFCC9900FFCCCC00FFCCFF00FFFF3300CCFF6600FFFF
+    9900FFFFCC006666FF0066FF660066FFFF00FF666600FF66FF00FFFF66002100
+    A5005F5F5F00777777008686860096969600CBCBCB00B2B2B200D7D7D700DDDD
+    DD00E3E3E300EAEAEA00F1F1F100F8F8F800F0FBFF00A4A0A000808080000000
+    FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00000000000000
+    0000000022000000000000000000002222000000000000000000000000000000
+    0022303030300000000000000000233030304300000000000000000000003030
+    3030383832302300000000000000293032323030000000000000000030323838
+    3238383838322300000000000000303238383838590000000000000000383838
+    383832323838FFFFFFFFFFFF0000293238383838383838000000000000383838
+    383838383830FFFFFFFFFFFFFFFF233038383838383859000000000000383838
+    38325938380000FFFFFFFFFFFFFFBC3038383838383800000000000000323838
+    383838380000FFFFFFFFFFFFFFFFBC3830303038380000000000000000000030
+    3838383800FFFFFFFFFFFFFFFFFFBC3830000030380000000000000000000000
+    32593800FFFFFFBCFFFFFFFFFFFFFF3800000000590000000000000000000000
+    003843FFFFFFFFBCFFFFFFFFFFFFFFFF43000092000000000000000000000000
+    000000FFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000
+    000000FFFFFFFFBCFFFFFFFFFFFFFFFF00000000000000000000000000000000
+    000000FFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000
+    000043FFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000
+    00000000FFFFFFFFFFFFFFFFFFFFFFFF43430000000000000000000000000000
+    00000000BCFFFFFFFFFFFFFFFFFFBC0000000000000000000000000000000000
+    000000000092FFFFFFFFFFFFBCBCFF0000000000000000000000000000000000
+    0000000000FFFFFFFFFFFFFFFFFF000000000000000000000000000000000000
+    000000000092FFFFFFFFFFFFFFFF000000000000000000000000000000000000
+    000000000000FFBCBCBCFFFFFFFF000000000000000000000000000000000000
+    000000000000BCBC3030BCBCFF00000000000000000000000000000000000000
+    000000000000433859303030BC00920000000000000000000000000000000000
+    0000000000003038385959303800000000000000000000000000000000000000
+    0000000000000038385959370000000000000000000000000000000000000000
+    000000000000FF0030300000FF00000000000000000000000000000000000000
+    00000000001DFF4300006D92FF00000000000000000000000000000000000000
+    0000000000003092000092BC0000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000434300000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000FFDFF9FFFE0F
+    F07FF000003FC000001FE0000007E0000007E000000FE000001FF800001FFC00
+    001FFC00001FFC00001FFC00001FFE00001FFF00003FFF00003FFF00003FFF80
+    007FFF8000FFFFC001FFFFE001FFFFF003FFFFF003FFFFF007FFFFF007FFFFE0
+    07FFFFE007FFFFE007FFFFE007FFFFE007FFFFF00FFFFFF81FFF
+  }
+  OnCreate = FormCreate
+  OnShow = FormShow
+  Position = poScreenCenter
+  LCLVersion = '2.0.6.0'
+  object Label2: TLabel
+    Left = 17
+    Height = 13
+    Top = 59
+    Width = 57
+    Caption = 'Floppy drive'
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ParentColor = False
+    ParentFont = False
+  end
+  object FloppyImage: TImage
+    Left = 278
+    Height = 9
+    Top = 67
+    Width = 16
+    AutoSize = True
+    Picture.Data = {
+      07544269746D6170C6040000424DC60400000000000036040000280000001000
+      0000090000000100080000000000900000000000000000000000000100000001
+      00000000000084848400C6C6C6000000FF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00040000000000000000000000000004040101010101010101010101010101
+      0004010202020204040404020202020101000102010101000000000101010201
+      0100010202020201010101020202020101000102020202020202020202030201
+      0100010404040404040404040404040101000401020202020202020202020202
+      010004040101010101010101010101010104
+    }
+    Visible = False
+  end
+  object Label3: TLabel
+    Left = 17
+    Height = 13
+    Top = 8
+    Width = 106
+    Caption = 'RawWrite for windows'
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ParentColor = False
+    ParentFont = False
+    OnDblClick = Label3DblClick
+  end
+  object Label4: TLabel
+    Left = 17
+    Height = 13
+    Top = 34
+    Width = 121
+    Caption = 'Written by John Newbigin'
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label5: TLabel
+    Cursor = crDrag
+    Left = 184
+    Height = 13
+    Top = 8
+    Width = 177
+    Caption = 'http://www.chrysocome.net/rawwrite'
+    Color = clBtnFace
+    Font.Color = clBlue
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    Font.Style = [fsUnderline]
+    ParentColor = False
+    ParentFont = False
+    Transparent = False
+    OnClick = Label5Click
+  end
+  object Version: TLabel
+    Left = 135
+    Height = 13
+    Top = 8
+    Width = 24
+    Caption = '0.8.1'
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ParentColor = False
+    ParentFont = False
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 344
+    Width = 380
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    Panels = <    
+      item
+        Text = '0%'
+        Width = 53
+      end    
+      item
+        Width = 79
+      end    
+      item
+        Text = 'Version'
+        Width = 53
+      end>
+    ParentFont = False
+    SimplePanel = False
+  end
+  object DriveComboBox: TComboBox
+    Left = 93
+    Height = 23
+    Top = 59
+    Width = 178
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ItemHeight = 17
+    OnDrawItem = DriveComboBoxDrawItem
+    ParentFont = False
+    Style = csOwnerDrawFixed
+    TabOrder = 1
+  end
+  object ExitButton: TButton
+    Left = 286
+    Height = 26
+    Top = 311
+    Width = 79
+    Caption = 'E&xit'
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    OnClick = ExitButtonClick
+    ParentFont = False
+    TabOrder = 2
+  end
+  object PageControl1: TPageControl
+    Left = 17
+    Height = 203
+    Top = 93
+    Width = 346
+    ActivePage = TabSheet3
+    Font.Color = clWindowText
+    Font.Height = -12
+    Font.Name = 'MS Sans Serif'
+    ParentFont = False
+    TabIndex = 3
+    TabOrder = 0
+    object TabSheet1: TTabSheet
+      Caption = 'Write'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ParentFont = False
+      object Label1: TLabel
+        Left = 8
+        Height = 13
+        Top = 34
+        Width = 45
+        Caption = 'Image file'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+      object Label8: TLabel
+        Left = 8
+        Height = 13
+        Top = 8
+        Width = 204
+        Caption = 'Use this tab to write an image to floppy disk'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+      object Label11: TLabel
+        Left = 8
+        Height = 13
+        Top = 59
+        Width = 83
+        Caption = 'Number of copies'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+      object FileNameEdit: TEdit
+        Left = 118
+        Height = 21
+        Top = 34
+        Width = 169
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        OnKeyPress = FileNameEditKeyPress
+        ParentFont = False
+        TabOrder = 0
+      end
+      object BrowseWriteButton: TButton
+        Left = 295
+        Height = 22
+        Top = 34
+        Width = 18
+        Caption = '...'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        OnClick = BrowseWriteButtonClick
+        ParentFont = False
+        TabOrder = 1
+      end
+      object DebugMemo: TMemo
+        Left = 8
+        Height = 81
+        Top = 84
+        Width = 228
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentFont = False
+        ScrollBars = ssVertical
+        TabOrder = 2
+        Visible = False
+      end
+      object WriteButton: TButton
+        Left = 250
+        Height = 26
+        Top = 139
+        Width = 79
+        Caption = '&Write'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        OnClick = WriteButtonClick
+        ParentFont = False
+        TabOrder = 3
+      end
+      object WriteCopyEdit: TEdit
+        Left = 118
+        Height = 21
+        Top = 59
+        Width = 43
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentFont = False
+        TabOrder = 4
+        Text = '1'
+      end
+      object UpDown1: TUpDown
+        Left = 161
+        Height = 21
+        Top = 59
+        Width = 16
+        Associate = WriteCopyEdit
+        Min = 1
+        Position = 1
+        TabOrder = 5
+      end
+    end
+    object TabSheet2: TTabSheet
+      Caption = 'Read'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ImageIndex = 1
+      ParentFont = False
+      object Label7: TLabel
+        Left = 8
+        Height = 13
+        Top = 34
+        Width = 97
+        Caption = 'File to save image to'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+      object Label9: TLabel
+        Left = 8
+        Height = 13
+        Top = 8
+        Width = 285
+        Caption = 'Use this tab to read a floppy disk and store it as an image file'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+      object ReadFileNameEdit: TEdit
+        Left = 118
+        Height = 21
+        Top = 34
+        Width = 169
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentFont = False
+        TabOrder = 0
+      end
+      object BrowseReadButton: TButton
+        Left = 295
+        Height = 22
+        Top = 34
+        Width = 18
+        Caption = '...'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        OnClick = BrowseReadButtonClick
+        ParentFont = False
+        TabOrder = 1
+      end
+      object ReadButton: TButton
+        Left = 250
+        Height = 26
+        Top = 139
+        Width = 79
+        Caption = '&Read'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        OnClick = ReadButtonClick
+        ParentFont = False
+        TabOrder = 2
+      end
+    end
+    object TabSheet4: TTabSheet
+      Caption = 'Advanced'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ImageIndex = 3
+      ParentFont = False
+      TabVisible = False
+      object Label10: TLabel
+        Left = 17
+        Height = 13
+        Top = 8
+        Width = 231
+        Caption = 'Adjusting these settings is not normally necessary'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+      end
+    end
+    object TabSheet3: TTabSheet
+      Caption = 'About'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ImageIndex = 2
+      OnShow = TabSheet3Show
+      ParentFont = False
+      object Memo1: TMemo
+        Left = 8
+        Height = 161
+        Top = 8
+        Width = 321
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentFont = False
+        ScrollBars = ssVertical
+        TabOrder = 0
+      end
+    end
+    object TabSheet5: TTabSheet
+      Caption = 'Help'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ImageIndex = 4
+      OnShow = TabSheet5Show
+      ParentFont = False
+      object Memo2: TMemo
+        Left = 8
+        Height = 161
+        Top = 8
+        Width = 321
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentFont = False
+        ScrollBars = ssVertical
+        TabOrder = 0
+      end
+    end
+    object TabSheet6: TTabSheet
+      Caption = 'Support'
+      ClientHeight = 177
+      ClientWidth = 338
+      Font.Color = clWindowText
+      Font.Height = -12
+      Font.Name = 'MS Sans Serif'
+      ImageIndex = 5
+      ParentFont = False
+      object Label12: TLabel
+        Left = 8
+        Height = 43
+        Top = 8
+        Width = 245
+        AutoSize = False
+        Caption = 'To report bugs in this program, contact me at'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+        WordWrap = True
+      end
+      object Label6: TLabel
+        Cursor = crDrag
+        Left = 34
+        Height = 13
+        Top = 25
+        Width = 160
+        Caption = 'mailto:jnewbigin@chrysocome.net'
+        Font.Color = clBlue
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        Font.Style = [fsUnderline]
+        ParentColor = False
+        ParentFont = False
+        OnClick = Label5Click
+      end
+      object Label13: TLabel
+        Left = 8
+        Height = 52
+        Top = 50
+        Width = 321
+        AutoSize = False
+        Caption = 'If you are having trouble installing Linux, please use the documentation provided with your distribution.  I am too busy to provide specific installation support.'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+        WordWrap = True
+      end
+      object Label14: TLabel
+        Left = 8
+        Height = 43
+        Top = 101
+        Width = 228
+        AutoSize = False
+        Caption = 'Before reporting a problem with rawwrite, please make sure you are running the latest version'
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'MS Sans Serif'
+        ParentColor = False
+        ParentFont = False
+        WordWrap = True
+      end
+    end
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'All files (*.*)|*.*|Image files (*.img;*.flp)|*.img;*.flp'
+    FilterIndex = 2
+    Options = [ofFileMustExist]
+    left = 303
+    top = 84
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.img'
+    Filter = 'All files (*.*)|*.*|Image files (*.img)|*.img'
+    FilterIndex = 2
+    Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
+    left = 337
+    top = 84
+  end
+end
