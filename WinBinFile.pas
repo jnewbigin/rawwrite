@@ -8,7 +8,7 @@ unit WinBinFile;
 interface
 
 {$IfDef Win32}
-uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
+uses Windows, WinIOCTL, LCLIntf, LCLType, {LMessages,} FileUtil;
 {$Else}
 {$IfDef Win64}
 uses Windows, WinIOCTL, LCLIntf, LCLType, LMessages, FileUtil;
@@ -389,9 +389,9 @@ function TBinaryFile.BlockRead2(Buf : Pointer; Count: Integer) : DWord;
 var
    Actual : DWord;
 
-   RawRead : TRAW_READ_INFO;
+   {RawRead : TRAW_READ_INFO;
 
-   Sector : String;
+   Sector : String;}
 begin
    if not IsOpen then
    begin
