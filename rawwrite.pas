@@ -1,10 +1,12 @@
 unit rawwrite;
 
+{$MODE Delphi}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ComCtrls, ExtCtrls, BlockDev;
+  Windows, {Messages,} SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, ComCtrls, ExtCtrls, BlockDev, FileUtil;
 
 const
    DebugHigh = 0;
@@ -92,9 +94,10 @@ procedure Debug(Str : String; Level : Integer);
 
 implementation
 
-uses DiskIO, ShellAPI;
+//uses DiskIO, ShellAPI;
+uses ShellAPI;
 
-{$R *.DFM}
+{$R *.lfm}
 
 function ReadFile2; external kernel32 name 'ReadFile';
 function WriteFile2; external kernel32 name 'WriteFile';
@@ -316,7 +319,7 @@ begin
       if h <> INVALID_HANDLE_VALUE then
       begin
          DriveComboBox.Items.Add(FileName);
-         CloseHandle(h);
+         FileClose(h); { *Convertito da CloseHandle* }
       end
       else
       begin
@@ -350,7 +353,7 @@ var
    h1       : THandle;
    Buffer   : String;
    Read     : DWORD;
-   Written  : DWORD;
+   {Written  : DWORD;}
    Blocks   : Integer;
    WrittenBlocks  : Integer;
    BlocksCount    : Integer;
@@ -473,7 +476,7 @@ begin
                HadError := True;
             end;
          finally
-            CloseHandle(h1);
+            FileClose(h1); { *Convertito da CloseHandle* }
          end
          else
          begin
@@ -551,13 +554,13 @@ var
    h1       : THandle;
    Buffer   : String;
    Read     : DWORD;
-   Written  : DWORD;
+   {Written  : DWORD;}
    Blocks   : Integer;
    WrittenBlocks  : Integer;
    BlocksCount    : Integer;
    BlocksRemaining : Integer;
    BlockCount     : Integer;
-   FileSize  : Integer;
+   {FileSize  : Integer;}
 
    Device   : TBlockDevice;
    Zero     : _Large_Integer;
@@ -652,7 +655,7 @@ begin
             MessageDlg('Error (' + IntToStr(GetLastError) + ')'#10 + SysErrorMessage(Error) , mtError, [mbOK], 0);
          end;
       finally
-         CloseHandle(h1);
+         FileClose(h1); { *Convertito da CloseHandle* }
       end
       else
       begin
