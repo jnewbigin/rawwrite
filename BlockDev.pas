@@ -1,10 +1,12 @@
 unit BlockDev;
 
+{$MODE Delphi}
+
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, DiskIO, WinIOCTL;
+  Windows, {Messages,} SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  StdCtrls, DiskIO {,WinIOCTL};
 
 type
 
@@ -197,7 +199,7 @@ function TNTDisk.Close : Boolean;
 begin
    if h <> INVALID_HANDLE_VALUE then
    begin
-      CloseHandle(h);
+      FileClose(h); { *Convertito da CloseHandle* }
    end;
    h := INVALID_HANDLE_VALUE;
    Result := True;
