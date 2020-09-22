@@ -9,7 +9,7 @@ unit WinIOCTL;
 
 interface
 
-uses Windows, LCLIntf, LCLType, LMessages;
+uses Windows, LCLIntf, LCLType{, LMessages};
 
 type
   TLargeInteger = packed record
