@@ -4,7 +4,7 @@ unit DiskIO;
 
 interface
 
-uses Classes, Dialogs;
+uses Classes, Dialogs, QTThunkU;
 
 type
   {$A-}
