@@ -14,10 +14,11 @@ unit QTThunkU;
 interface
 
 uses
-  SysUtils;
+  SysUtils, Windows;
 
 type
   THandle16 = Word;
+  TFarProc = Pointer;
 
 //Windows 95 undocumented routines. These won't be found in Windows NT
 {$ifdef Generic}
@@ -52,7 +53,7 @@ function  GlobalUnLock16(Mem: THandle16): WordBool; stdcall;
 // of WOW32.DLL, which will cause NULL to be returned when the
 // limit is exceeded by the supplied offset.
 function WOWGetVDMPointer(vp, dwBytes: DWord;
-                          fProtectedMode: Bool): Pointer; stdcall;
+                          fProtectedMode: Boolean): Pointer; stdcall;
 
 // The following two functions are here for compatibility with
 // Windows 95.  On Win95, the global heap can be rearranged,
@@ -72,7 +73,7 @@ function WOWGetVDMPointer(vp, dwBytes: DWord;
 // to discard flat pointers and call WOWGetVDMPointer again
 // to be sure the flat address is correct.
 function WOWGetVDMPointerFix(vp, dwBytes: DWord;
-                             fProtectedMode: Bool): Pointer; stdcall;
+                             fProtectedMode: Boolean): Pointer; stdcall;
 procedure WOWGetVDMPointerUnfix(vp: DWord); stdcall;
 
 //My compound memory routines
@@ -112,6 +113,9 @@ type
 const
   kernel32 = 'kernel32.dll';
   wow32 = 'wow32.dll';
+  GMEM_FIXED          = $0000;
+  GMEM_ZEROINIT       = $0040;
+  GPTR = GMEM_FIXED or GMEM_ZEROINIT;
 
 //QT_Thunk changes its ordinal number under
 //Windows 95 OSR2 so we link to it dynamically
@@ -401,4 +405,3 @@ initialization
     raise EThunkError.Create('Flat thunks only supported under Windows 95');
 {$endif}
 end.
-
